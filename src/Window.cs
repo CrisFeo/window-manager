@@ -56,7 +56,7 @@ static class Window {
   }
 
   [StructLayout(LayoutKind.Sequential)]
-  public struct Rect {
+  struct Rect {
     public int l;
     public int t;
     public int r;

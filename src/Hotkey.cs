@@ -4,11 +4,6 @@ using System.Runtime.InteropServices;
 
 static class Hotkey {
 
-  // Constants
-  ///////////////////////
-
-  const int MSG_HOTKEY = 0x0312;
-
   // Enums
   ///////////////////////
 
@@ -21,77 +16,50 @@ static class Hotkey {
     Win = 8
   }
 
-  // Structs
-  ///////////////////////
-
-  [StructLayout(LayoutKind.Sequential)]
-  public struct Point {
-    public int x;
-    public int y;
-  }
-
-  [StructLayout(LayoutKind.Sequential)]
-  public struct Msg {
-    public IntPtr wnd;
-    public uint message;
-    public UIntPtr wParam;
-    public IntPtr lParam;
-    public int time;
-    public Point pt;
-  }
-
-  // DLL imports
-  ///////////////////////
-
-  [DllImport("user32.dll")]
-  static extern int GetMessage(out Msg msg, IntPtr wnd, uint min, uint max);
-
-  [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-  static extern bool RegisterHotKey(IntPtr wnd, int id, Mod mods, Key key);
-
-  [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-  private static extern bool UnregisterHotKey(IntPtr wnd, int id);
-
   // Internal vars
   ///////////////////////
 
-  static int currentId;
-  static Dictionary<int, Func<bool>> handlers = new Dictionary<int, Func<bool>>();
+  static Dictionary<Mod, Dictionary<Key, Action>> handlers;
 
   // Public methods
   ///////////////////////
 
-  public static int? Register(Mod mods, Key key, Action callback) {
-    return Register(mods, key, () => { callback(); return true; });
-  }
-
-  public static int? Register(Mod mods, Key key, Func<bool> callback) {
-    if (key == 0 || mods == Mod.None) return null;
-    var id = currentId++;
-    var didRegister = RegisterHotKey(IntPtr.Zero, id, mods, key);
-    if (!didRegister) return null;
-    handlers[id] = callback;
-    return id;
-  }
-
-  public static bool Unregister(int id) {
-    var didUnregister =  UnregisterHotKey(IntPtr.Zero, id);
-    if (!didUnregister) return false;
-    handlers.Remove(id);
+  public static bool Map(Mod mods, Key key, Action callback) {
+    Initialize();
+    if (mods == Mod.None || key == Key.None) return false;
+    if (!handlers.ContainsKey(mods)) {
+      handlers[mods] = new Dictionary<Key, Action>();
+    }
+    if (handlers[mods].ContainsKey(key)) return false;
+    handlers[mods][key] = callback;
     return true;
   }
 
-  public static void Listen() {
-    Func<bool> handler;
-    var msg = new Msg();
-    var ret = 0;
-    while ((ret = GetMessage(out msg, IntPtr.Zero, 0, 0)) != 0) {
-      if (ret == -1) break;
-      if (msg.message == MSG_HOTKEY) {
-        if (!handlers.TryGetValue((int)msg.wParam, out handler)) break;
-        if (!handler.Invoke()) break;
-      }
-    }
+  public static bool Unmap(Mod mods, Key key) {
+    Initialize();
+    if (!handlers.ContainsKey(mods)) return false;
+    var didRemove = handlers[mods].Remove(key);
+    if (handlers[mods].Count == 0) handlers.Remove(mods);
+    return didRemove;
+  }
+
+  // Internal methods
+  ///////////////////////
+
+  static void Initialize() {
+    if (Hook.IsInstalled) return;
+    Hook.Install(OnDown, OnUp);
+    handlers = new Dictionary<Mod, Dictionary<Key, Action>>();
+  }
+
+  static bool OnDown(Key key) {
+    Console.WriteLine($"down: {key}");
+    return false;
+  }
+
+  static bool OnUp(Key key) {
+    Console.WriteLine($"up: {key}");
+    return false;
   }
 
 }

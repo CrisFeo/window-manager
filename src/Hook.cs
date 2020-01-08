@@ -23,7 +23,7 @@ static class Hook {
   ///////////////////////
 
   [StructLayout(LayoutKind.Sequential)]
-  private struct KeyboardMessage {
+  struct KeyboardMessage {
     public int keyCode;
     public int scanCode;
     public int flags;
@@ -34,98 +34,87 @@ static class Hook {
   // Handlers
   ///////////////////////
 
-  delegate IntPtr HookFunc(int code, MsgType type, IntPtr msg);
+  delegate IntPtr HookFunc(int code, IntPtr type, IntPtr msg);
 
   // DLL imports
   ///////////////////////
 
-  [DllImport("user32.dll", SetLastError = true)]
-  static extern IntPtr SetWindowsHookEx(HookType type, HookFunc cbk, IntPtr mod, uint thread);
-
-  [DllImport("user32.dll", SetLastError = true)]
-  static extern bool UnhookWindowsHookEx(IntPtr hdl);
+  [DllImport("user32.dll")]
+  static extern IntPtr SetWindowsHookEx(HookType type, HookFunc cbk, IntPtr mod, int thread);
 
   [DllImport("user32.dll")]
-  static extern IntPtr CallNextHookEx(IntPtr hdl, int code, MsgType type, IntPtr msg);
+  static extern IntPtr CallNextHookEx(IntPtr hdl, int code, IntPtr type, IntPtr msg);
+
+  [DllImport("user32.dll")]
+  static extern bool UnhookWindowsHookEx(IntPtr hdl);
 
   // Internal vars
   ///////////////////////
 
   static IntPtr hookHandle;
-  static int currentId;
-  static Dictionary<int, Action> handlers = new Dictionary<int, Action>();
+  static Func<Key, bool> onDown;
+  static Func<Key, bool> onUp;
+
+  // Public properties
+  ///////////////////////
+
+  public static bool IsInstalled {
+    get => hookHandle != IntPtr.Zero;
+  }
 
   // Public methods
   ///////////////////////
 
-  public static void Initialize() {
-    if (hookHandle != IntPtr.Zero) return;
-    var module = Marshal.GetHINSTANCE(
-      Assembly.GetExecutingAssembly().GetModules()[0]
-    );
+  public static bool Install(
+    Func<Key, bool> onDown,
+    Func<Key, bool> onUp
+  ) {
+    if (hookHandle != IntPtr.Zero) return false;
+    Console.WriteLine($"installing hook...");
+    Hook.onDown = onDown;
+    Hook.onUp = onUp;
     hookHandle = SetWindowsHookEx(
       HookType.KEYBOARD_LOW_LEVEL,
       OnHook,
-      module,
+      Marshal.GetHINSTANCE(Assembly.GetExecutingAssembly().GetModules()[0]),
       0
     );
+    return true;
   }
 
-  public static void Shutdown() {
-    if (hookHandle == IntPtr.Zero) return;
+  public static bool Uninstall() {
+    if (hookHandle == IntPtr.Zero) return false;
+    Console.WriteLine($"uninstalling hook...");
     UnhookWindowsHookEx(hookHandle);
     hookHandle = IntPtr.Zero;
-  }
-
-  public static int? Register(Action callback) {
-    //if (key == 0 || mods == Mod.None) return null;
-    var id = currentId++;
-    //var didRegister = RegisterHotKey(IntPtr.Zero, id, mods, key);
-    //if (!didRegister) return null;
-    handlers[id] = callback;
-    return id;
-  }
-
-  public static void Unregister(int id) {
-    //var didUnregister =  UnregisterHotKey(IntPtr.Zero, id);
-    //if (!didUnregister) return false;
-    handlers.Remove(id);
+    return true;
   }
 
   // Internal methods
   ///////////////////////
 
-  static IntPtr OnHook(int code, MsgType type, IntPtr msgPtr) {
+  static IntPtr OnHook(int code, IntPtr typePtr, IntPtr msgPtr) {
+    Console.WriteLine($"OnHook");
     if (code < 0) {
-      return CallNextHookEx(hookHandle, code, type, msgPtr);
+      return CallNextHookEx(hookHandle, code, typePtr, msgPtr);
     }
     var msg = (KeyboardMessage)Marshal.PtrToStructure(
       msgPtr,
       typeof(KeyboardMessage)
     );
     var handled = false;
-    switch (type) {
+    switch ((MsgType)typePtr.ToInt32()) {
       case MsgType.KEY_DOWN:
       case MsgType.SYS_KEY_DOWN:
-        handled = OnDown(msg);
+        handled = onDown((Key)msg.keyCode);
         break;
       case MsgType.KEY_UP:
       case MsgType.SYS_KEY_UP:
-        handled = OnUp(msg);
+        handled = onUp((Key)msg.keyCode);
         break;
     }
     if (handled) return IntPtr.Zero;
-    return CallNextHookEx(hookHandle, code, type, msgPtr);
-  }
-
-  static bool OnDown(KeyboardMessage msg) {
-    Console.WriteLine($"keydown: {(Key)msg.keyCode}");
-    return true;
-  }
-
-  static bool OnUp(KeyboardMessage msg) {
-    Console.WriteLine($"keyup: {(Key)msg.keyCode}");
-    return true;
+    return CallNextHookEx(hookHandle, code, typePtr, msgPtr);
   }
 
 }

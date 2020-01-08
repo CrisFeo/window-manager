@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Runtime.InteropServices;
 using System.Linq;
 
@@ -20,6 +21,7 @@ static class Program {
 
   static void Main(string[] args) {
     W.Initialize();
+    /*
     var b = BORDER_SIZE;
     var hb = BORDER_SIZE / 2;
     var bb = BORDER_SIZE + hb;
@@ -58,20 +60,25 @@ static class Program {
       .DefaultIfEmpty(a)
       .First()));
 #if DEBUG
-    H.Register(H.Mod.Win, K.Q, () => false);
+    H.Map(H.Mod.Win, K.Q, () => Environment.Exit(0));
 #endif
-    H.Listen();
+    */
+    Hook.Install(k => false, k => false);
+    Console.WriteLine("started...");
+    var endTime = DateTime.Now + new TimeSpan(5 * TimeSpan.TicksPerSecond);
+    while(DateTime.Now < endTime) Thread.Yield();
+    Console.WriteLine("exiting...");
   }
 
   static void Map(H.Mod mod, K key, Action<W.Info> fn) {
-    H.Register(mod, key, () => {
+    H.Map(mod, key, () => {
       var active = W.Active(); if (!active.Valid) return;
       fn(active);
     });
   }
 
   static void Map(H.Mod mod, K key, Action<W.Info, int, int> fn) {
-    H.Register(mod, key, () => {
+    H.Map(mod, key, () => {
       var active = W.Active(); if (!active.Valid) return;
       var (w, h) = W.Resolution();
       fn(active, w, h);
