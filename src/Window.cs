@@ -34,6 +34,7 @@ static class Window {
   }
 
   enum DwmWindowAttribute {
+    EXTENDED_FRAME_BOUNDS = 9,
     CLOAKED = 14,
   }
 
@@ -48,6 +49,7 @@ static class Window {
   public struct Info {
     public IntPtr handle;
     public bool isVisible;
+    public Rect offset;
     public int x;
     public int y;
     public int w;
@@ -56,7 +58,7 @@ static class Window {
   }
 
   [StructLayout(LayoutKind.Sequential)]
-  struct Rect {
+  public struct Rect {
     public int l;
     public int t;
     public int r;
@@ -65,6 +67,12 @@ static class Window {
     public int y { get { return t; } }
     public int w { get { return r - l; } }
     public int h { get { return b - t; } }
+    public Rect(int x, int y, int w, int h) {
+      l = x;
+      t = y;
+      r = w + l;
+      b = h + t;
+    }
   }
 
   // DLL imports
@@ -78,6 +86,9 @@ static class Window {
 
   [DllImport("user32.dll", SetLastError = true)]
   static extern bool GetWindowRect(IntPtr wnd, out Rect rect);
+
+  [DllImport("user32.dll", SetLastError = true)]
+  static extern bool GetClientRect(IntPtr wnd, out Rect rect);
 
   [DllImport("user32.dll")]
   static extern IntPtr GetForegroundWindow();
@@ -115,12 +126,23 @@ static class Window {
   [DllImport("dwmapi.dll")]
   static extern int DwmGetWindowAttribute(IntPtr wnd, DwmWindowAttribute attr, out bool val, int size);
 
+  [DllImport("dwmapi.dll")]
+  static extern int DwmGetWindowAttribute(IntPtr wnd, DwmWindowAttribute attr, out Rect val, int size);
+
+  // Static constructor
+  ///////////////////////
+
+  static Window() {
+    SetProcessDPIAware();
+  }
+
   // Public methods
   ///////////////////////
 
-  public static bool Initialize() {
-    return SetProcessDPIAware();
-  }
+  // This method's purpose is to ensure that the static constructor is called to
+  // set DPI awareness. If not called, then the first time window properties are
+  // accessed pixel values will be incorrect on a scaled display.
+  public static void Initialize() { }
 
   public static (int, int) Resolution() {
     return (
@@ -166,10 +188,10 @@ static class Window {
 
   public static bool Move(Info info, int? x, int? y, int? w, int? h) {
     if (!ShowWindow(info.handle, ShowStyle.NORMAL_NO_ACTIVATE)) return false;
-    var xp = (x - 8  ?? info.x);
-    var yp = (y      ?? info.y);
-    var wp = (w + 16 ?? info.w);
-    var hp = (h + 8  ?? info.h);
+    var xp = (x ?? info.x)+ info.offset.x;
+    var yp = (y ?? info.y)+ info.offset.y;
+    var wp = (w ?? info.w)+ info.offset.w;
+    var hp = (h ?? info.h)+ info.offset.h;
     var flags = SetWindowPosFlags.NO_Z_ORDER
       | SetWindowPosFlags.NO_ACTIVATE
       | SetWindowPosFlags.NO_COPY_BITS
@@ -185,15 +207,28 @@ static class Window {
     if (IsZoomed(handle)) {
       if (!ShowWindow(handle, ShowStyle.NORMAL_NO_ACTIVATE)) return default;
     }
-    Rect r;
-    if (!GetWindowRect(handle, out r)) return default;
+    Rect rect;
+    if (!GetWindowRect(handle, out rect)) return default;
+    Rect extendedRect;
+    if (DwmGetWindowAttribute(
+      handle,
+      DwmWindowAttribute.EXTENDED_FRAME_BOUNDS,
+      out extendedRect,
+      Marshal.SizeOf(typeof(Rect))
+    ) != 0) return default;
     return new Info {
       handle = handle,
       isVisible = IsVisible(handle),
-      x = r.x,
-      y = r.y,
-      w = r.w,
-      h = r.h,
+      offset = new Rect(
+        rect.x - extendedRect.x,
+        rect.y - extendedRect.y,
+        rect.w - extendedRect.w,
+        rect.h - extendedRect.h
+      ),
+      x = extendedRect.x,
+      y = extendedRect.y,
+      w = extendedRect.w,
+      h = extendedRect.h,
     };
   }
 

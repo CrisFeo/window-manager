@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
 
 static class Hotkey {
 
@@ -59,11 +57,19 @@ static class Hotkey {
   static HashSet<Key> heldKeys;
   static Mod heldMods;
 
+  // Static constructor
+  ///////////////////////
+
+  static Hotkey() {
+    Hook.Install(OnDown, OnUp);
+    handlers = new Dictionary<Mod, Dictionary<Key, Action>>();
+    heldKeys = new HashSet<Key>();
+  }
+
   // Public methods
   ///////////////////////
 
   public static bool Map(Mod mods, Key key, Action callback) {
-    Initialize();
     if (mods == Mod.None || INVALID_KEYS.Contains(key)) return false;
     if (!handlers.ContainsKey(mods)) {
       handlers[mods] = new Dictionary<Key, Action>();
@@ -74,7 +80,6 @@ static class Hotkey {
   }
 
   public static bool Unmap(Mod mods, Key key) {
-    Initialize();
     if (!handlers.ContainsKey(mods)) return false;
     var didRemove = handlers[mods].Remove(key);
     if (handlers[mods].Count == 0) handlers.Remove(mods);
@@ -83,13 +88,6 @@ static class Hotkey {
 
   // Internal methods
   ///////////////////////
-
-  static void Initialize() {
-    if (Hook.IsInstalled) return;
-    Hook.Install(OnDown, OnUp);
-    handlers = new Dictionary<Mod, Dictionary<Key, Action>>();
-    heldKeys = new HashSet<Key>();
-  }
 
   static bool OnDown(Key key) {
     if (ALT_KEYS.Contains(key))   { heldMods |= Mod.Alt;   return false; }

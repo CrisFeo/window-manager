@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Threading;
-using System.Runtime.InteropServices;
 using System.Linq;
 
 using W = Window;
 using H = Hotkey;
+using M = Hotkey.Mod;
 using K = Key;
 
 static class Program {
@@ -12,9 +11,9 @@ static class Program {
   // Constants
   ///////////////////////
 
-  const int BORDER_SIZE = 30;
-  const H.Mod MOD_MOVE = H.Mod.Win | H.Mod.Shift;
-  const H.Mod MOD_FOCUS = H.Mod.Win;
+  const int BORDER_SIZE = 20;
+  const M MOD_MOVE = M.Win | M.Shift;
+  const M MOD_FOCUS = M.Win;
 
   // Methods
   ///////////////////////
@@ -24,7 +23,7 @@ static class Program {
     var b = BORDER_SIZE;
     var hb = BORDER_SIZE / 2;
     var bb = BORDER_SIZE + hb;
-    Map(MOD_MOVE, K.I, (a, w, h) => W.Move(a, w/2-a.w/2, h/2-a.h/2, null,   null  ));
+    Map(MOD_MOVE, K.I, (a, w, h) => W.Move(a, (w-a.w)/2, (h-a.h)/2, null,   null  ));
     Map(MOD_MOVE, K.O, (a, w, h) => W.Move(a, b,         b,         w-2*b,  h-2*b ));
     Map(MOD_MOVE, K.H, (a, w, h) => W.Move(a, b,         null,      w/2-bb, null  ));
     Map(MOD_MOVE, K.L, (a, w, h) => W.Move(a, w/2+hb,    null,      w/2-bb, null  ));
@@ -59,21 +58,23 @@ static class Program {
       .DefaultIfEmpty(a)
       .First()));
 #if DEBUG
-    H.Map(H.Mod.Win, K.Q, () => Environment.Exit(0));
+    H.Map(M.Win, K.Q, () => Environment.Exit(0));
 #endif
     Loop.Wait();
   }
 
-  static void Map(H.Mod mod, K key, Action<W.Info> fn) {
+  static void Map(M mod, K key, Action<W.Info> fn) {
     H.Map(mod, key, () => {
-      var active = W.Active(); if (!active.Valid) return;
+      var active = W.Active();
+      if (!active.Valid) return;
       fn(active);
     });
   }
 
-  static void Map(H.Mod mod, K key, Action<W.Info, int, int> fn) {
+  static void Map(M mod, K key, Action<W.Info, int, int> fn) {
     H.Map(mod, key, () => {
-      var active = W.Active(); if (!active.Valid) return;
+      var active = W.Active();
+      if (!active.Valid) return;
       var (w, h) = W.Resolution();
       fn(active, w, h);
     });
