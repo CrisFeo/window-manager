@@ -70,7 +70,6 @@ static class Hook {
     Func<Key, bool> onUp
   ) {
     if (hookHandle != IntPtr.Zero) return false;
-    Console.WriteLine($"installing hook...");
     Hook.onDown = onDown;
     Hook.onUp = onUp;
     hookHandle = SetWindowsHookEx(
@@ -84,7 +83,6 @@ static class Hook {
 
   public static bool Uninstall() {
     if (hookHandle == IntPtr.Zero) return false;
-    Console.WriteLine($"uninstalling hook...");
     UnhookWindowsHookEx(hookHandle);
     hookHandle = IntPtr.Zero;
     return true;
@@ -94,7 +92,6 @@ static class Hook {
   ///////////////////////
 
   static IntPtr OnHook(int code, IntPtr typePtr, IntPtr msgPtr) {
-    Console.WriteLine($"OnHook");
     if (code < 0) {
       return CallNextHookEx(hookHandle, code, typePtr, msgPtr);
     }
@@ -113,7 +110,7 @@ static class Hook {
         handled = onUp((Key)msg.keyCode);
         break;
     }
-    if (handled) return IntPtr.Zero;
+    if (handled) return new IntPtr(-1);
     return CallNextHookEx(hookHandle, code, typePtr, msgPtr);
   }
 

@@ -21,11 +21,10 @@ static class Program {
 
   static void Main(string[] args) {
     W.Initialize();
-    /*
     var b = BORDER_SIZE;
     var hb = BORDER_SIZE / 2;
     var bb = BORDER_SIZE + hb;
-    Map(MOD_MOVE, K.I, (a, w, h) => W.Move(a, (w-a.w)/2, (h-a.h)/2, null,   null  ));
+    Map(MOD_MOVE, K.I, (a, w, h) => W.Move(a, w/2-a.w/2, h/2-a.h/2, null,   null  ));
     Map(MOD_MOVE, K.O, (a, w, h) => W.Move(a, b,         b,         w-2*b,  h-2*b ));
     Map(MOD_MOVE, K.H, (a, w, h) => W.Move(a, b,         null,      w/2-bb, null  ));
     Map(MOD_MOVE, K.L, (a, w, h) => W.Move(a, w/2+hb,    null,      w/2-bb, null  ));
@@ -62,12 +61,7 @@ static class Program {
 #if DEBUG
     H.Map(H.Mod.Win, K.Q, () => Environment.Exit(0));
 #endif
-    */
-    Hook.Install(k => false, k => false);
-    Console.WriteLine("started...");
-    var endTime = DateTime.Now + new TimeSpan(5 * TimeSpan.TicksPerSecond);
-    while(DateTime.Now < endTime) Thread.Yield();
-    Console.WriteLine("exiting...");
+    Loop.Wait();
   }
 
   static void Map(H.Mod mod, K key, Action<W.Info> fn) {
