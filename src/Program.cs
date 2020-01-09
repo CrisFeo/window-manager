@@ -1,18 +1,24 @@
 ﻿using System;
 using System.Linq;
 
+using Color = System.Drawing.Color;
 using W = Window;
 using H = Hotkey;
 using M = Hotkey.Mod;
 using K = Key;
+using G = Graphics;
 
 static class Program {
 
   // Constants
   ///////////////////////
 
-  const int BORDER_SIZE = 20;
-  const M MOD_MOVE = M.Win | M.Shift;
+  const int GAP_SIZE = 20;
+  const int BORDER_SIZE = 8;
+  const int BORDER_OFFSET = 0;
+  static readonly Color BORDER_COLOR = Color.FromArgb(255, 95, 135, 0);
+
+  const M MOD_PUSH = M.Win | M.Shift;
   const M MOD_FOCUS = M.Win;
 
   // Methods
@@ -20,45 +26,69 @@ static class Program {
 
   static void Main(string[] args) {
     W.Initialize();
-    var b = BORDER_SIZE;
-    var hb = BORDER_SIZE / 2;
-    var bb = BORDER_SIZE + hb;
-    Map(MOD_MOVE, K.I, (a, w, h) => W.Move(a, (w-a.w)/2, (h-a.h)/2, null,   null  ));
-    Map(MOD_MOVE, K.O, (a, w, h) => W.Move(a, b,         b,         w-2*b,  h-2*b ));
-    Map(MOD_MOVE, K.H, (a, w, h) => W.Move(a, b,         null,      w/2-bb, null  ));
-    Map(MOD_MOVE, K.L, (a, w, h) => W.Move(a, w/2+hb,    null,      w/2-bb, null  ));
-    Map(MOD_MOVE, K.K, (a, w, h) => W.Move(a, null,      b,         null,   h/2-bb));
-    Map(MOD_MOVE, K.J, (a, w, h) => W.Move(a, null,      h/2+hb,    null,   h/2-bb));
-    Map(MOD_FOCUS, K.H, a => W.SetActive(W.All()
-      .Where(w => w.isVisible)
-      .Where(w => w.x < a.x)
-      .OrderBy(w => w.x)
-      .ThenBy(w => Math.Abs(a.y - w.y))
-      .DefaultIfEmpty(a)
-      .First()));
-    Map(MOD_FOCUS, K.L, a => W.SetActive(W.All()
-      .Where(w => w.isVisible)
-      .Where(w => w.x > a.x)
-      .OrderByDescending(w => w.x)
-      .ThenBy(w => Math.Abs(a.y - w.y))
-      .DefaultIfEmpty(a)
-      .First()));
-    Map(MOD_FOCUS, K.K, a => W.SetActive(W.All()
-      .Where(w => w.isVisible)
-      .Where(w => w.y < a.y)
-      .OrderBy(w => w.y)
-      .ThenBy(w => Math.Abs(a.x - w.x))
-      .DefaultIfEmpty(a)
-      .First()));
-    Map(MOD_FOCUS, K.J, a => W.SetActive(W.All()
-      .Where(w => w.isVisible)
-      .Where(w => w.y > a.y)
-      .OrderByDescending(w => w.y)
-      .ThenBy(w => Math.Abs(a.x - w.x))
-      .DefaultIfEmpty(a)
-      .First()));
+    // Bind keys to "push" windows into screen halves with gaps
+    {
+      var g = GAP_SIZE;
+      var hg = GAP_SIZE / 2;
+      var ghg = GAP_SIZE + hg;
+      Map(MOD_PUSH, K.I, (a, w, h) => W.Move(a, (w-a.w)/2, (h-a.h)/2, null,    null  ));
+      Map(MOD_PUSH, K.O, (a, w, h) => W.Move(a, g,         g,         w-2*g,   h-2*g ));
+      Map(MOD_PUSH, K.H, (a, w, h) => W.Move(a, g,         null,      w/2-ghg, null  ));
+      Map(MOD_PUSH, K.L, (a, w, h) => W.Move(a, w/2+hg,    null,      w/2-ghg, null  ));
+      Map(MOD_PUSH, K.K, (a, w, h) => W.Move(a, null,      g,         null,    h/2-ghg));
+      Map(MOD_PUSH, K.J, (a, w, h) => W.Move(a, null,      h/2+hg,    null,    h/2-ghg));
+    }
+    // Bind keys to focus windows adjacent to the active one
+    {
+      Map(MOD_FOCUS, K.H, a => W.SetActive(W.All()
+        .Where(w => w.isVisible)
+        .Where(w => w.x < a.x)
+        .OrderBy(w => w.x)
+        .ThenBy(w => Math.Abs(a.y - w.y))
+        .DefaultIfEmpty(a)
+        .First()));
+      Map(MOD_FOCUS, K.L, a => W.SetActive(W.All()
+        .Where(w => w.isVisible)
+        .Where(w => w.x > a.x)
+        .OrderByDescending(w => w.x)
+        .ThenBy(w => Math.Abs(a.y - w.y))
+        .DefaultIfEmpty(a)
+        .First()));
+      Map(MOD_FOCUS, K.K, a => W.SetActive(W.All()
+        .Where(w => w.isVisible)
+        .Where(w => w.y < a.y)
+        .OrderBy(w => w.y)
+        .ThenBy(w => Math.Abs(a.x - w.x))
+        .DefaultIfEmpty(a)
+        .First()));
+      Map(MOD_FOCUS, K.J, a => W.SetActive(W.All()
+        .Where(w => w.isVisible)
+        .Where(w => w.y > a.y)
+        .OrderByDescending(w => w.y)
+        .ThenBy(w => Math.Abs(a.x - w.x))
+        .DefaultIfEmpty(a)
+        .First()));
+    }
+    // Draw a border around the active window
+    {
+      var o = BORDER_OFFSET + BORDER_SIZE / 2;
+      var activeBorderGraphic = G.New(g => {
+        var a = W.Active();
+        if (!a.isValid) return;
+        G.Rect(g, BORDER_COLOR, BORDER_SIZE, a.x-o, a.y-o, a.w+2*o, a.h+2*o);
+      });
+      Event.onFocus += w => G.Redraw(activeBorderGraphic);
+      Event.onMove += w => G.Redraw(activeBorderGraphic);
+    }
 #if DEBUG
     H.Map(M.Win, K.Q, () => Environment.Exit(0));
+    Map(M.Win, K.W, a => {
+      var all = W.All().Where(w => w.isVisible);
+      foreach (var w in all) Console.WriteLine(
+        $"{W.Title(w)} {W.Class(w)} {w.x},{w.y} {w.w}x{w.h}"
+      );
+    });
+
 #endif
     Loop.Wait();
   }
@@ -66,7 +96,7 @@ static class Program {
   static void Map(M mod, K key, Action<W.Info> fn) {
     H.Map(mod, key, () => {
       var active = W.Active();
-      if (!active.Valid) return;
+      if (!active.isValid) return;
       fn(active);
     });
   }
@@ -74,7 +104,7 @@ static class Program {
   static void Map(M mod, K key, Action<W.Info, int, int> fn) {
     H.Map(mod, key, () => {
       var active = W.Active();
-      if (!active.Valid) return;
+      if (!active.isValid) return;
       var (w, h) = W.Resolution();
       fn(active, w, h);
     });

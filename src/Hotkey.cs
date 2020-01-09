@@ -61,7 +61,7 @@ static class Hotkey {
   ///////////////////////
 
   static Hotkey() {
-    Hook.Install(OnDown, OnUp);
+    KeyHook.Install(OnDown, OnUp);
     handlers = new Dictionary<Mod, Dictionary<Key, Action>>();
     heldKeys = new HashSet<Key>();
   }

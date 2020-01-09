@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -48,13 +49,15 @@ static class Window {
 
   public struct Info {
     public IntPtr handle;
+    public int pid;
     public bool isVisible;
     public Rect offset;
     public int x;
     public int y;
     public int w;
     public int h;
-    public bool Valid { get { return handle != null; } }
+    public bool isValid { get => handle != null; }
+    public bool isDisplayable { get => w != 0 && h != 0; }
   }
 
   [StructLayout(LayoutKind.Sequential)]
@@ -80,6 +83,9 @@ static class Window {
 
   [DllImport("user32.dll", SetLastError=true)]
   static extern bool SetProcessDPIAware();
+
+  [DllImport("user32.dll")]
+  static extern bool IsWindow(IntPtr wnd);
 
   [DllImport("user32.dll")]
   static extern int GetSystemMetrics(SystemMetric metric);
@@ -110,6 +116,9 @@ static class Window {
 
   [DllImport("user32.dll", SetLastError = true)]
   public static extern int GetClassName(IntPtr wnd, StringBuilder s, int maxLen);
+
+  [DllImport("user32.dll", SetLastError=true)]
+  static extern int GetWindowThreadProcessId(IntPtr wnd, out int pid);
 
   [DllImport("user32.dll", SetLastError = true)]
   static extern bool IsWindowVisible(IntPtr wnd);
@@ -144,6 +153,39 @@ static class Window {
   // accessed pixel values will be incorrect on a scaled display.
   public static void Initialize() { }
 
+  public static Info FromHandle(IntPtr handle) {
+    if (handle == null) return default;
+    if (!IsWindow(handle)) return default;
+    if (IsZoomed(handle)) {
+      if (!ShowWindow(handle, ShowStyle.NORMAL_NO_ACTIVATE)) return default;
+    }
+    Rect rect;
+    if (!GetWindowRect(handle, out rect)) return default;
+    Rect extendedRect;
+    if (DwmGetWindowAttribute(
+      handle,
+      DwmWindowAttribute.EXTENDED_FRAME_BOUNDS,
+      out extendedRect,
+      Marshal.SizeOf(typeof(Rect))
+    ) != 0) return default;
+    GetWindowThreadProcessId(handle, out int pid);
+    return new Info {
+      handle = handle,
+      pid = pid,
+      isVisible = IsVisible(handle),
+      offset = new Rect(
+        rect.x - extendedRect.x,
+        rect.y - extendedRect.y,
+        rect.w - extendedRect.w,
+        rect.h - extendedRect.h
+      ),
+      x = extendedRect.x,
+      y = extendedRect.y,
+      w = extendedRect.w,
+      h = extendedRect.h,
+    };
+  }
+
   public static (int, int) Resolution() {
     return (
       GetSystemMetrics(SystemMetric.SCREEN_X),
@@ -157,9 +199,10 @@ static class Window {
 
   public static List<Info> All() {
     var l = new List<Info>();
+    var pid = Process.GetCurrentProcess().Id;
     EnumWindows((h, p) => {
       var i = FromHandle(h);
-      if (!i.Valid) return true;
+      if (!i.isValid || i.pid == pid) return true;
       l.Add(i);
       return true;
     }, IntPtr.Zero);
@@ -201,36 +244,6 @@ static class Window {
 
   // Internal methods
   ///////////////////////
-
-  static Info FromHandle(IntPtr handle) {
-    if (handle == null) return default;
-    if (IsZoomed(handle)) {
-      if (!ShowWindow(handle, ShowStyle.NORMAL_NO_ACTIVATE)) return default;
-    }
-    Rect rect;
-    if (!GetWindowRect(handle, out rect)) return default;
-    Rect extendedRect;
-    if (DwmGetWindowAttribute(
-      handle,
-      DwmWindowAttribute.EXTENDED_FRAME_BOUNDS,
-      out extendedRect,
-      Marshal.SizeOf(typeof(Rect))
-    ) != 0) return default;
-    return new Info {
-      handle = handle,
-      isVisible = IsVisible(handle),
-      offset = new Rect(
-        rect.x - extendedRect.x,
-        rect.y - extendedRect.y,
-        rect.w - extendedRect.w,
-        rect.h - extendedRect.h
-      ),
-      x = extendedRect.x,
-      y = extendedRect.y,
-      w = extendedRect.w,
-      h = extendedRect.h,
-    };
-  }
 
   static bool IsVisible(IntPtr handle) {
     if (!IsWindowVisible(handle)) return false;

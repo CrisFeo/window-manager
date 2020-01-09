@@ -2,7 +2,7 @@ using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-static class Hook {
+static class KeyHook {
 
   // Enums
   ///////////////////////
@@ -54,13 +54,6 @@ static class Hook {
   static Func<Key, bool> onDown;
   static Func<Key, bool> onUp;
 
-  // Public properties
-  ///////////////////////
-
-  public static bool IsInstalled {
-    get => hookHandle != IntPtr.Zero;
-  }
-
   // Public methods
   ///////////////////////
 
@@ -69,8 +62,8 @@ static class Hook {
     Func<Key, bool> onUp
   ) {
     if (hookHandle != IntPtr.Zero) return false;
-    Hook.onDown = onDown;
-    Hook.onUp = onUp;
+    KeyHook.onDown = onDown;
+    KeyHook.onUp = onUp;
     hookHandle = SetWindowsHookEx(
       HookType.KEYBOARD_LOW_LEVEL,
       OnHook,
