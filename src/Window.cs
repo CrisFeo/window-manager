@@ -81,9 +81,6 @@ static class Window {
   // DLL imports
   ///////////////////////
 
-  [DllImport("user32.dll", SetLastError=true)]
-  static extern bool SetProcessDPIAware();
-
   [DllImport("user32.dll")]
   static extern bool IsWindow(IntPtr wnd);
 
@@ -138,20 +135,8 @@ static class Window {
   [DllImport("dwmapi.dll")]
   static extern int DwmGetWindowAttribute(IntPtr wnd, DwmWindowAttribute attr, out Rect val, int size);
 
-  // Static constructor
-  ///////////////////////
-
-  static Window() {
-    SetProcessDPIAware();
-  }
-
   // Public methods
   ///////////////////////
-
-  // This method's purpose is to ensure that the static constructor is called to
-  // set DPI awareness. If not called, then the first time window properties are
-  // accessed pixel values will be incorrect on a scaled display.
-  public static void Initialize() { }
 
   public static Info FromHandle(IntPtr handle) {
     if (handle == null) return default;

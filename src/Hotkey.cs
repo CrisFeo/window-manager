@@ -75,7 +75,7 @@ static class Hotkey {
       handlers[mods] = new Dictionary<Key, Action>();
     }
     if (handlers[mods].ContainsKey(key)) return false;
-    handlers[mods][key] = callback;
+    handlers[mods][key] = () => Loop.MainThread(callback);
     return true;
   }
 

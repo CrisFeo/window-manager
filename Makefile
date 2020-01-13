@@ -11,3 +11,7 @@ build: $(SRC_FILES)
 .PHONY: run
 run: $(SRC_FILES)
 	dotnet.exe run
+
+.PHONY: run-release
+run-release: $(SRC_FILES)
+	dotnet.exe run -c Release

@@ -20,12 +20,13 @@ static class Program {
 
   const M MOD_PUSH = M.Win | M.Shift;
   const M MOD_FOCUS = M.Win;
+  const M MOD_SWITCH = M.Win;
 
   // Methods
   ///////////////////////
 
+  [STAThread]
   static void Main(string[] args) {
-    W.Initialize();
     // Bind keys to "push" windows into screen halves with gaps
     {
       var g = GAP_SIZE;
