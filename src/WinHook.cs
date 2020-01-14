@@ -105,7 +105,7 @@ static class WinHook {
     if (windowHandle == IntPtr.Zero || objectId != 0) return;
     var w = Window.FromHandle(windowHandle);
     if (!w.isValid || !w.isDisplayable) return;
-    onEvent(e, w);
+    if (onEvent != null) onEvent(e, w);
   }
 
 }

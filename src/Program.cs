@@ -81,17 +81,19 @@ static class Program {
       Event.onFocus += w => G.Redraw(activeBorderGraphic);
       Event.onMove += w => G.Redraw(activeBorderGraphic);
     }
+    // Bind keys for some useful debugging functionality
+    {
 #if DEBUG
-    H.Map(M.Win, K.Q, () => Environment.Exit(0));
-    Map(M.Win, K.W, a => {
-      var all = W.All().Where(w => w.isVisible);
-      foreach (var w in all) Console.WriteLine(
-        $"{W.Title(w)} {W.Class(w)} {w.x},{w.y} {w.w}x{w.h}"
-      );
-    });
-
+      H.Map(M.Win, K.Q, Loop.Exit);
+      Map(M.Win, K.W, a => {
+        var all = W.All().Where(w => w.isVisible);
+        foreach (var w in all) Console.WriteLine(
+          $"{W.Title(w)} {W.Class(w)} {w.x},{w.y} {w.w}x{w.h}"
+        );
+      });
 #endif
-    Loop.Wait();
+    }
+    Loop.Run();
   }
 
   static void Map(M mod, K key, Action<W.Info> fn) {

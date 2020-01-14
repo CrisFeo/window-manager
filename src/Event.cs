@@ -13,7 +13,7 @@ static class Event {
   ///////////////////////
 
   static Event() {
-    WinHook.Install(OnEvent);
+    WinHook.Install((e, i) => Loop.Invoke(() => OnEvent(e, i)));
   }
 
   // Internal methods
