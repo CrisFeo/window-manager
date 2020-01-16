@@ -27,6 +27,18 @@ static class Program {
 
   [STAThread]
   static void Main(string[] args) {
+    // Bind keys to switch between virtual desktops
+    {
+      H.Map(MOD_SWITCH, K.N1, () => Desktop.GoTo(0));
+      H.Map(MOD_SWITCH, K.N2, () => Desktop.GoTo(1));
+      H.Map(MOD_SWITCH, K.N3, () => Desktop.GoTo(2));
+      H.Map(MOD_SWITCH, K.N4, () => Desktop.GoTo(3));
+      H.Map(MOD_SWITCH, K.N5, () => Desktop.GoTo(4));
+      H.Map(MOD_SWITCH, K.N6, () => Desktop.GoTo(5));
+      H.Map(MOD_SWITCH, K.N7, () => Desktop.GoTo(6));
+      H.Map(MOD_SWITCH, K.N8, () => Desktop.GoTo(7));
+      H.Map(MOD_SWITCH, K.N9, () => Desktop.GoTo(8));
+    }
     // Bind keys to "push" windows into screen halves with gaps
     {
       var g = GAP_SIZE;
@@ -84,22 +96,6 @@ static class Program {
     // Bind keys for some useful debugging functionality
     {
 #if DEBUG
-      H.Map(M.Win | M.Ctrl, K.H, () => Input.Send(new[] {
-        (Key.LeftControl, true),
-        (Key.LeftWindows, true),
-        (Key.Left, true),
-        (Key.Left, false),
-        (Key.LeftWindows, false),
-        (Key.LeftControl, false),
-      }));
-      H.Map(M.Win | M.Ctrl, K.L, () => Input.Send(new[] {
-        (Key.LeftControl, true),
-        (Key.LeftWindows, true),
-        (Key.Right, true),
-        (Key.Right, false),
-        (Key.LeftWindows, false),
-        (Key.LeftControl, false),
-      }));
       H.Map(M.Win, K.Q, Loop.Exit);
       Map(M.Win, K.W, a => {
         var all = W.All().Where(w => w.isVisible);
