@@ -84,6 +84,22 @@ static class Program {
     // Bind keys for some useful debugging functionality
     {
 #if DEBUG
+      H.Map(M.Win | M.Ctrl, K.H, () => Input.Send(new[] {
+        (Key.LeftControl, true),
+        (Key.LeftWindows, true),
+        (Key.Left, true),
+        (Key.Left, false),
+        (Key.LeftWindows, false),
+        (Key.LeftControl, false),
+      }));
+      H.Map(M.Win | M.Ctrl, K.L, () => Input.Send(new[] {
+        (Key.LeftControl, true),
+        (Key.LeftWindows, true),
+        (Key.Right, true),
+        (Key.Right, false),
+        (Key.LeftWindows, false),
+        (Key.LeftControl, false),
+      }));
       H.Map(M.Win, K.Q, Loop.Exit);
       Map(M.Win, K.W, a => {
         var all = W.All().Where(w => w.isVisible);
