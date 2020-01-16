@@ -26,7 +26,7 @@ static class WinHook {
   // Handlers
   ///////////////////////
 
-  delegate void EventFunc(
+  delegate void HookFunc(
     IntPtr hookHandle,
     EventType eventType,
     IntPtr windowHandle,
@@ -44,7 +44,7 @@ static class WinHook {
     EventType eventMin,
     EventType eventMax,
     IntPtr mod,
-    EventFunc cbk,
+    HookFunc cbk,
     uint pid,
     uint thread,
     Flags flags
@@ -57,6 +57,7 @@ static class WinHook {
   ///////////////////////
 
   static IntPtr hookHandle;
+  static HookFunc hookDelegate;
   static Action<Event, Window.Info> onEvent;
 
   // Public methods
@@ -65,11 +66,12 @@ static class WinHook {
   public static bool Install(Action<Event, Window.Info> onEvent) {
     if (hookHandle != IntPtr.Zero) return false;
     WinHook.onEvent = onEvent;
+    WinHook.hookDelegate = OnHook;
     hookHandle = SetWinEventHook(
       EventType.SYSTEM_FOREGROUND,
       EventType.OBJECT_LOCATIONCHANGE,
       Marshal.GetHINSTANCE(Assembly.GetExecutingAssembly().GetModules()[0]),
-      OnHook,
+      WinHook.hookDelegate,
       0,
       0,
       Flags.OUT_OF_CONTEXT | Flags.SKIP_OWN_PROCESS

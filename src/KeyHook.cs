@@ -51,6 +51,7 @@ static class KeyHook {
   ///////////////////////
 
   static IntPtr hookHandle;
+  static HookFunc hookDelegate;
   static Func<Key, bool> onDown;
   static Func<Key, bool> onUp;
 
@@ -64,9 +65,10 @@ static class KeyHook {
     if (hookHandle != IntPtr.Zero) return false;
     KeyHook.onDown = onDown;
     KeyHook.onUp = onUp;
+    KeyHook.hookDelegate = OnHook;
     hookHandle = SetWindowsHookEx(
       HookType.KEYBOARD_LOW_LEVEL,
-      OnHook,
+      KeyHook.hookDelegate,
       Marshal.GetHINSTANCE(Assembly.GetExecutingAssembly().GetModules()[0]),
       0
     );
