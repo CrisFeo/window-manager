@@ -20,16 +20,16 @@ static class Desktop {
     var currentIndex = IndexOf(all, current);
     if (currentIndex == -1 || index == currentIndex) return;
     var movementKey = index < currentIndex ? Key.Left : Key.Right;
-    var keystrokes = new List<(Key, bool)>();
-    keystrokes.Add((Key.LeftControl, true));
-    keystrokes.Add((Key.LeftWindows, true));
+    var keystrokes = new LinkedList<(Key, bool)>();
+    keystrokes.AddLast((Key.LeftControl, true));
+    keystrokes.AddLast((Key.LeftWindows, true));
     for (var i = 0; i < Math.Abs(index - currentIndex); i++) {
-      keystrokes.Add((movementKey, true));
-      keystrokes.Add((movementKey, false));
+      keystrokes.AddLast((movementKey, true));
+      keystrokes.AddLast((movementKey, false));
     }
-    keystrokes.Add((Key.LeftWindows, false));
-    keystrokes.Add((Key.LeftControl, false));
-    Input.Send(keystrokes.ToArray());
+    keystrokes.AddLast((Key.LeftWindows, false));
+    keystrokes.AddLast((Key.LeftControl, false));
+    Input.Send(keystrokes);
   }
 
   // Internal methods

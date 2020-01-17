@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 using Color = System.Drawing.Color;
 using W = Window;
@@ -14,9 +16,12 @@ static class Program {
   ///////////////////////
 
   const int GAP_SIZE = 20;
+
   const int BORDER_SIZE = 8;
   const int BORDER_OFFSET = 0;
   static readonly Color BORDER_COLOR = Color.FromArgb(255, 95, 135, 0);
+
+  const long TAP_DURATION = 50;
 
   const M MOD_PUSH = M.Win | M.Shift;
   const M MOD_FOCUS = M.Win;
@@ -29,15 +34,15 @@ static class Program {
   static void Main(string[] args) {
     // Bind keys to switch between virtual desktops
     {
-      H.Map(MOD_SWITCH, K.N1, () => Desktop.GoTo(0));
-      H.Map(MOD_SWITCH, K.N2, () => Desktop.GoTo(1));
-      H.Map(MOD_SWITCH, K.N3, () => Desktop.GoTo(2));
-      H.Map(MOD_SWITCH, K.N4, () => Desktop.GoTo(3));
-      H.Map(MOD_SWITCH, K.N5, () => Desktop.GoTo(4));
-      H.Map(MOD_SWITCH, K.N6, () => Desktop.GoTo(5));
-      H.Map(MOD_SWITCH, K.N7, () => Desktop.GoTo(6));
-      H.Map(MOD_SWITCH, K.N8, () => Desktop.GoTo(7));
-      H.Map(MOD_SWITCH, K.N9, () => Desktop.GoTo(8));
+      Map(MOD_SWITCH, K.N1, () => Desktop.GoTo(0));
+      Map(MOD_SWITCH, K.N2, () => Desktop.GoTo(1));
+      Map(MOD_SWITCH, K.N3, () => Desktop.GoTo(2));
+      Map(MOD_SWITCH, K.N4, () => Desktop.GoTo(3));
+      Map(MOD_SWITCH, K.N5, () => Desktop.GoTo(4));
+      Map(MOD_SWITCH, K.N6, () => Desktop.GoTo(5));
+      Map(MOD_SWITCH, K.N7, () => Desktop.GoTo(6));
+      Map(MOD_SWITCH, K.N8, () => Desktop.GoTo(7));
+      Map(MOD_SWITCH, K.N9, () => Desktop.GoTo(8));
     }
     // Bind keys to "push" windows into screen halves with gaps
     {
@@ -93,10 +98,43 @@ static class Program {
       Event.onFocus += w => G.Redraw(activeBorderGraphic);
       Event.onMove += w => G.Redraw(activeBorderGraphic);
     }
+    // Bind short taps on Shift keys to Parentheses
+    {
+      MapTap(
+        TAP_DURATION,
+        K.LeftShift,
+        new[] { K.LeftShift },
+        new[] { K.LeftShift, K.N9 }
+      );
+      MapTap(
+        TAP_DURATION,
+        K.RightShift,
+        new[] { K.RightShift },
+        new[] { K.RightShift, K.N0 }
+      );
+    }
+    // Bind Tab to Alt on hold and Tab on tap
+    {
+      MapTap(
+        TAP_DURATION,
+        K.Tab,
+        new[] { K.LeftMenu },
+        new[] { K.Tab }
+      );
+    }
+    // Bind Caps Lock to Control on hold and Escape on tap
+    {
+      MapTap(
+        TAP_DURATION,
+        K.CapsLock,
+        new[] { K.LeftControl },
+        new[] { K.Escape }
+      );
+    }
     // Bind keys for some useful debugging functionality
     {
 #if DEBUG
-      H.Map(M.Win, K.Q, Loop.Exit);
+      Map(M.Win, K.Q, Loop.Exit);
       Map(M.Win, K.W, a => {
         var all = W.All().Where(w => w.isVisible);
         foreach (var w in all) Console.WriteLine(
@@ -108,8 +146,12 @@ static class Program {
     Loop.Run();
   }
 
+  static void Map(M mod, K key, Action fn) {
+    H.MapDown(mod, key, false, fn);
+  }
+
   static void Map(M mod, K key, Action<W.Info> fn) {
-    H.Map(mod, key, () => {
+    H.MapDown(mod, key, false, () => {
       var active = W.Active();
       if (!active.isValid) return;
       fn(active);
@@ -117,12 +159,40 @@ static class Program {
   }
 
   static void Map(M mod, K key, Action<W.Info, int, int> fn) {
-    H.Map(mod, key, () => {
+    H.MapDown(mod, key, false, () => {
       var active = W.Active();
       if (!active.isValid) return;
       var (w, h) = W.Resolution();
       fn(active, w, h);
     });
+  }
+
+  static void MapTap(long tapDuration, K from, K[] hold, K[] tap) {
+    long? downTime = null;
+    H.MapDown(M.Any, from, true, () => {
+      if (downTime.HasValue) return;
+      var thisDownTime = downTime = Time.Now();
+      Time.After(tapDuration, () => {
+        if (downTime != thisDownTime) return;
+        SendRaw(hold.Select(k => (k, true)));
+      });
+    });
+    H.MapUp(M.Any, from, () => {
+      if (!downTime.HasValue) return;
+      if (Time.Now() - downTime.Value > tapDuration) {
+        SendRaw(hold.Select(k => (k, false)));
+      } else {
+        SendRaw(Enumerable.Concat(
+          tap.Select(k => (k, true)),
+          tap.Select(k => (k, false))
+        ));
+      }
+      downTime = null;
+    });
+  }
+
+  static void SendRaw(IEnumerable<(Key, bool)> keystrokes) {
+    Input.SendRaw(new LinkedList<(Key, bool)>(keystrokes));
   }
 
 }

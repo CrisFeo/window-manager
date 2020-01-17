@@ -92,42 +92,35 @@ static class Input {
   // Public methods
   ///////////////////////
 
-  public static void Send((Key, bool)[] keystrokes) {
-    var (initial, reset) = ClearModifiers();
-    initial.AddRange(keystrokes.Select(FromKeystroke));
-    initial.AddRange(reset);
-    var messages = initial.ToArray();
-    SendInput(messages.Length, messages, InputMsg.Size);
+  public static void Send(LinkedList<(Key, bool)> keystrokes) {
+    foreach (var modifier in MODIFIERS) {
+      if (!IsDown(modifier)) continue;
+      keystrokes.AddFirst((modifier, false));
+      keystrokes.AddLast((modifier, true));
+    }
+    SendInput(keystrokes);
+  }
+
+  public static void SendRaw(LinkedList<(Key, bool)> keystrokes) {
+    SendInput(keystrokes);
   }
 
   // Internal methods
   ///////////////////////
 
-  static (List<InputMsg>, List<InputMsg>) ClearModifiers() {
-    var initial = new List<InputMsg>();
-    var reset = new List<InputMsg>();
-    initial.Add(FromKeystroke(Key.Undefined, true));
-    reset.Add(FromKeystroke(Key.Undefined, true));
-    foreach (var modifier in MODIFIERS) {
-      if (!IsDown(modifier)) continue;
-      initial.Add(FromKeystroke(modifier, false));
-      reset.Add(FromKeystroke(modifier, true));
-    }
-    initial.Add(FromKeystroke(Key.Undefined, false));
-    reset.Add(FromKeystroke(Key.Undefined, false));
-    return (initial, reset);
-  }
-
   static bool IsDown(Key key) {
     return GetAsyncKeyState(key) >> 15 == 1;
   }
 
-  static InputMsg FromKeystroke((Key, bool) keystroke) {
-    var (key, isDown) = keystroke;
-    return FromKeystroke(key, isDown);
+  static void SendInput(LinkedList<(Key, bool)> keystrokes) {
+    keystrokes.AddFirst(Hotkey.DISABLE_KEYSTROKE);
+    keystrokes.AddLast(Hotkey.DISABLE_KEYSTROKE);
+    var messages = keystrokes.Select(FromKeystroke).ToArray();
+    SendInput(messages.Length, messages, InputMsg.Size);
   }
 
-  static InputMsg FromKeystroke(Key key, bool isDown) {
+  static InputMsg FromKeystroke((Key, bool) keystroke) {
+    var (key, isDown) = keystroke;
     return new InputMsg {
       type = Type.Key,
       data = new InputData {

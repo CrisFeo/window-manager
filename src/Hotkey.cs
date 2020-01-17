@@ -6,6 +6,10 @@ static class Hotkey {
   // Constants
   ///////////////////////
 
+  public static readonly (Key, bool) DISABLE_KEYSTROKE = (DISABLE_KEY, false);
+
+  const Key DISABLE_KEY = Key.Undefined;
+
   static readonly HashSet<Key> ALT_KEYS = new HashSet<Key> {
     Key.LeftMenu,
     Key.RightMenu,
@@ -26,18 +30,6 @@ static class Hotkey {
     Key.RightWindows,
   };
 
-  static readonly HashSet<Key> INVALID_KEYS = new HashSet<Key> {
-    Key.None,
-    Key.LeftMenu,
-    Key.RightMenu,
-    Key.LeftControl,
-    Key.RightControl,
-    Key.LeftShift,
-    Key.RightShift,
-    Key.LeftWindows,
-    Key.RightWindows,
-  };
-
   // Enums
   ///////////////////////
 
@@ -47,76 +39,107 @@ static class Hotkey {
     Alt = 1,
     Ctrl = 2,
     Shift = 4,
-    Win = 8
+    Win = 8,
+    Any = 16,
+  }
+
+  // Structs
+  ///////////////////////
+
+  struct DownHandler {
+    public Action action;
+    public bool isRepeating;
   }
 
   // Internal vars
   ///////////////////////
 
-  static Dictionary<Mod, Dictionary<Key, Action>> handlers;
+  static Dictionary<Mod, Dictionary<Key, DownHandler>> downHandlers;
+  static Dictionary<Mod, Dictionary<Key, Action>> upHandlers;
   static HashSet<Key> heldKeys;
   static Mod heldMods;
+  static bool isDisabled;
 
   // Static constructor
   ///////////////////////
 
   static Hotkey() {
     KeyHook.Install(OnDown, OnUp);
-    handlers = new Dictionary<Mod, Dictionary<Key, Action>>();
+    downHandlers = new Dictionary<Mod, Dictionary<Key, DownHandler>>();
+    upHandlers = new Dictionary<Mod, Dictionary<Key, Action>>();
     heldKeys = new HashSet<Key>();
   }
 
   // Public methods
   ///////////////////////
 
-  public static bool Map(Mod mods, Key key, Action callback) {
-    if (mods == Mod.None || INVALID_KEYS.Contains(key)) return false;
-    if (!handlers.ContainsKey(mods)) {
-      handlers[mods] = new Dictionary<Key, Action>();
+  public static bool MapDown(
+    Mod mods,
+    Key key,
+    bool isRepeating,
+    Action action
+  ) {
+    if (!downHandlers.ContainsKey(mods)) {
+      downHandlers[mods] = new Dictionary<Key, DownHandler>();
     }
-    if (handlers[mods].ContainsKey(key)) return false;
-    handlers[mods][key] = () => Loop.Invoke(callback);
+    if (downHandlers[mods].ContainsKey(key)) return false;
+    downHandlers[mods][key] = new DownHandler {
+      action = () => Loop.Invoke(action),
+      isRepeating = isRepeating,
+    };
     return true;
   }
 
-  public static bool Unmap(Mod mods, Key key) {
-    if (!handlers.ContainsKey(mods)) return false;
-    var didRemove = handlers[mods].Remove(key);
-    if (handlers[mods].Count == 0) handlers.Remove(mods);
-    return didRemove;
+  public static bool MapUp(Mod mods, Key key, Action action) {
+    if (!upHandlers.ContainsKey(mods)) {
+      upHandlers[mods] = new Dictionary<Key, Action>();
+    }
+    if (upHandlers[mods].ContainsKey(key)) return false;
+    upHandlers[mods][key] = () => Loop.Invoke(action);
+    return true;
   }
 
   // Internal methods
   ///////////////////////
 
   static bool OnDown(Key key) {
-    if (ALT_KEYS.Contains(key))   { heldMods |= Mod.Alt;   return false; }
-    if (CTRL_KEYS.Contains(key))  { heldMods |= Mod.Ctrl;  return false; }
-    if (SHIFT_KEYS.Contains(key)) { heldMods |= Mod.Shift; return false; }
-    if (WIN_KEYS.Contains(key))   { heldMods |= Mod.Win;   return false; }
-    if (heldKeys.Add(key)) {
-      var handler = FindHandler(heldMods, key);
-      if (handler != null) {
-        handler();
-        return true;
-      }
-    }
-    return false;
+    if (ALT_KEYS.Contains(key))   heldMods |= Mod.Alt;
+    if (CTRL_KEYS.Contains(key))  heldMods |= Mod.Ctrl;
+    if (SHIFT_KEYS.Contains(key)) heldMods |= Mod.Shift;
+    if (WIN_KEYS.Contains(key))   heldMods |= Mod.Win;
+    var isRepeat = !heldKeys.Add(key);
+    if (isDisabled) return false;
+    var (handler, exists) = FindHandler(downHandlers, heldMods, key);
+    if (!exists) (handler, exists) = FindHandler(downHandlers, Mod.Any, key);
+    if (!exists || handler.action == null) return false;
+    if (!handler.isRepeating && isRepeat) return false;
+    handler.action();
+    return true;
   }
 
   static bool OnUp(Key key) {
-    if (ALT_KEYS.Contains(key))   { heldMods &= ~Mod.Alt;   return false; }
-    if (CTRL_KEYS.Contains(key))  { heldMods &= ~Mod.Ctrl;  return false; }
-    if (SHIFT_KEYS.Contains(key)) { heldMods &= ~Mod.Shift; return false; }
-    if (WIN_KEYS.Contains(key))   { heldMods &= ~Mod.Win;   return false; }
-    heldKeys.Remove(key);
-    return false;
+    if (key == DISABLE_KEY) isDisabled = !isDisabled;
+    if (ALT_KEYS.Contains(key))   heldMods &= ~Mod.Alt;
+    if (CTRL_KEYS.Contains(key))  heldMods &= ~Mod.Ctrl;
+    if (SHIFT_KEYS.Contains(key)) heldMods &= ~Mod.Shift;
+    if (WIN_KEYS.Contains(key))   heldMods &= ~Mod.Win;
+    if (!heldKeys.Remove(key)) return false;
+    if (isDisabled) return false;
+    var (handler, exists) = FindHandler(upHandlers, heldMods, key);
+    if (!exists) (handler, exists) = FindHandler(upHandlers, Mod.Any, key);
+    if (!exists || handler == null) return false;
+    handler();
+    return true;
   }
 
-  static Action FindHandler(Mod mods, Key key) {
-    if (!handlers.ContainsKey(mods)) return null;
-    if (!handlers[mods].ContainsKey(key)) return null;
-    return handlers[mods][key];
+  static (T, bool) FindHandler<T>(
+    Dictionary<Mod, Dictionary<Key, T>> handlers,
+    Mod mod,
+    Key key
+  ) {
+    if (!handlers.ContainsKey(mod))      return (default, false);
+    if (!handlers[mod].ContainsKey(key)) return (default, false);
+    return (handlers[mod][key], true);
   }
 
 }

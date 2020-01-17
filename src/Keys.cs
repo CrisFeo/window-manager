@@ -196,5 +196,5 @@ enum Key : ushort {
   Zoom = 0xFB,
   Noname = 0xFC,
   PA1 = 0xFD,
-  OEMClear = 0xFE
+  OEMClear = 0xFE,
 }
