@@ -21,7 +21,9 @@ static class Event {
 
   static void OnEvent(WinHook.Event e, Window.Info info) {
     switch (e) {
-      case WinHook.Event.Focus: onFocus(info); break;
+      case WinHook.Event.Focus:
+        onFocus(info);
+        break;
       case WinHook.Event.Move: onMove(info); break;
     }
   }

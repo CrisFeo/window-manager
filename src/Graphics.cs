@@ -24,9 +24,11 @@ static class Graphics {
 
   class GraphicsForm : Form {
 
-    const int WS_EX_NOACTIVATE = 0x08000000;
-    const int WS_EX_TOOLWINDOW = 0x00000080;
-    const int WS_EX_TOPMOST    = 0x00000008;
+    const int WS_EX_TOPMOST     = 0x00000008;
+    const int WS_EX_TRANSPARENT = 0x00000020;
+    const int WS_EX_TOOLWINDOW  = 0x00000080;
+    const int WS_EX_LAYERED     = 0x00080000;
+    const int WS_EX_NOACTIVATE  = 0x08000000;
 
     public GraphicsForm() {
       FormBorderStyle = FormBorderStyle.FixedToolWindow;
@@ -45,9 +47,11 @@ static class Graphics {
     protected override CreateParams CreateParams {
       get {
         var p = base.CreateParams;
-        p.ExStyle |= WS_EX_NOACTIVATE;
-        p.ExStyle |= WS_EX_TOOLWINDOW;
         p.ExStyle |= WS_EX_TOPMOST;
+        p.ExStyle |= WS_EX_TRANSPARENT;
+        p.ExStyle |= WS_EX_TOOLWINDOW;
+        p.ExStyle |= WS_EX_LAYERED;
+        p.ExStyle |= WS_EX_NOACTIVATE;
         return p;
       }
     }
@@ -79,7 +83,7 @@ static class Graphics {
     int w,
     int h
   ) {
-    g.DrawRectangle(new Pen(c, t), x, y, w, h);
+    g.DrawRectangle(new Pen(c, t), x - 1, y - 1, w, h);
   }
 
 }

@@ -20,6 +20,9 @@ static class Program {
   const int BORDER_SIZE = 8;
   const int BORDER_OFFSET = 0;
   static readonly Color BORDER_COLOR = Color.FromArgb(255, 95, 135, 0);
+  static readonly HashSet<string> BORDER_IGNORE_TITLES = new HashSet<string> {
+    "Cortana",
+  };
 
   const long TAP_DURATION = 50;
 
@@ -93,6 +96,7 @@ static class Program {
       var activeBorderGraphic = G.New(g => {
         var a = W.Active();
         if (!a.isValid) return;
+        if (BORDER_IGNORE_TITLES.Contains(W.Title(a))) return;
         G.Rect(g, BORDER_COLOR, BORDER_SIZE, a.x-o, a.y-o, a.w+2*o, a.h+2*o);
       });
       Event.onFocus += w => G.Redraw(activeBorderGraphic);

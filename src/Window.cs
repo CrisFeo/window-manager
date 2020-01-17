@@ -198,6 +198,10 @@ static class Window {
     return FromHandle(FindWindow(default, name));
   }
 
+  public static Info ByClass(string className) {
+    return FromHandle(FindWindow(className, default));
+  }
+
   public static string Title(Info info) {
     var l = GetWindowTextLength(info.handle);
     if (l == 0) return null;
