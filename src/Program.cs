@@ -24,7 +24,7 @@ static class Program {
     "Cortana",
   };
 
-  const long TAP_DURATION = 50;
+  const long TAP_DURATION = 100;
 
   const M MOD_PUSH = M.Win | M.Shift;
   const M MOD_FOCUS = M.Win;
@@ -106,12 +106,14 @@ static class Program {
     {
       MapTap(
         TAP_DURATION,
+        false,
         K.LeftShift,
         new[] { K.LeftShift },
         new[] { K.LeftShift, K.N9 }
       );
       MapTap(
         TAP_DURATION,
+        false,
         K.RightShift,
         new[] { K.RightShift },
         new[] { K.RightShift, K.N0 }
@@ -121,6 +123,7 @@ static class Program {
     {
       MapTap(
         TAP_DURATION,
+        true,
         K.Tab,
         new[] { K.LeftMenu },
         new[] { K.Tab }
@@ -130,6 +133,7 @@ static class Program {
     {
       MapTap(
         TAP_DURATION,
+        false,
         K.CapsLock,
         new[] { K.LeftControl },
         new[] { K.Escape }
@@ -171,25 +175,43 @@ static class Program {
     });
   }
 
-  static void MapTap(long tapDuration, K from, K[] hold, K[] tap) {
+  static void MapTap(
+    long tapDuration,
+    bool delayHold,
+    K from,
+    K[] hold,
+    K[] tap
+  ) {
     long? downTime = null;
     H.MapDown(M.Any, from, true, () => {
       if (downTime.HasValue) return;
       var thisDownTime = downTime = Time.Now();
-      Time.After(tapDuration, () => {
-        if (downTime != thisDownTime) return;
+      if (delayHold) {
+        Time.After(tapDuration, () => {
+          if (downTime != thisDownTime) return;
+          SendRaw(hold.Select(k => (k, true)));
+        });
+      } else {
         SendRaw(hold.Select(k => (k, true)));
-      });
+      }
     });
     H.MapUp(M.Any, from, () => {
       if (!downTime.HasValue) return;
       if (Time.Now() - downTime.Value > tapDuration) {
         SendRaw(hold.Select(k => (k, false)));
       } else {
-        SendRaw(Enumerable.Concat(
+        var tapPress = Enumerable.Concat(
           tap.Select(k => (k, true)),
           tap.Select(k => (k, false))
-        ));
+        );
+        if (delayHold) {
+          SendRaw(tapPress);
+        } else {
+          SendRaw(Enumerable.Concat(
+            hold.Select(k => (k, false)),
+            tapPress
+          ));
+        }
       }
       downTime = null;
     });
