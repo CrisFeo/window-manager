@@ -52,8 +52,9 @@ static class Program {
       var g = GAP_SIZE;
       var hg = GAP_SIZE / 2;
       var ghg = GAP_SIZE + hg;
+      Map(MOD_PUSH, K.Y, (a, w, h) => W.Move(a, 0,         0,         w,       h     ));
+      Map(MOD_PUSH, K.U, (a, w, h) => W.Move(a, g,         g,         w-2*g,   h-2*g ));
       Map(MOD_PUSH, K.I, (a, w, h) => W.Move(a, (w-a.w)/2, (h-a.h)/2, null,    null  ));
-      Map(MOD_PUSH, K.O, (a, w, h) => W.Move(a, g,         g,         w-2*g,   h-2*g ));
       Map(MOD_PUSH, K.H, (a, w, h) => W.Move(a, g,         null,      w/2-ghg, null  ));
       Map(MOD_PUSH, K.L, (a, w, h) => W.Move(a, w/2+hg,    null,      w/2-ghg, null  ));
       Map(MOD_PUSH, K.K, (a, w, h) => W.Move(a, null,      g,         null,    h/2-ghg));

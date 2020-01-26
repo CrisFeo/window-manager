@@ -31,7 +31,7 @@ static class Graphics {
     const int WS_EX_NOACTIVATE  = 0x08000000;
 
     public GraphicsForm() {
-      FormBorderStyle = FormBorderStyle.FixedToolWindow;
+      FormBorderStyle = FormBorderStyle.None;
       Bounds = Screen.PrimaryScreen.Bounds;
       ShowInTaskbar = false;
       ControlBox = false;
@@ -83,7 +83,7 @@ static class Graphics {
     int w,
     int h
   ) {
-    g.DrawRectangle(new Pen(c, t), x - 1, y - 1, w, h);
+    g.DrawRectangle(new Pen(c, t), x, y, w, h);
   }
 
 }
