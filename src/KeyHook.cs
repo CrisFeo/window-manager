@@ -2,6 +2,8 @@ using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
+namespace WinCtl {
+
 static class KeyHook {
 
   // Enums
@@ -107,5 +109,7 @@ static class KeyHook {
     if (handled) return new IntPtr(-1);
     return CallNextHookEx(hookHandle, code, typePtr, msgPtr);
   }
+
+}
 
 }

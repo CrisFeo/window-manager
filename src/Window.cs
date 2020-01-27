@@ -5,7 +5,9 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
-static class Window {
+namespace WinCtl {
+
+public static class Window {
 
   // Constants
   ///////////////////////
@@ -138,39 +140,6 @@ static class Window {
   // Public methods
   ///////////////////////
 
-  public static Info FromHandle(IntPtr handle) {
-    if (handle == null) return default;
-    if (!IsWindow(handle)) return default;
-    if (IsZoomed(handle)) {
-      if (!ShowWindow(handle, ShowStyle.NORMAL_NO_ACTIVATE)) return default;
-    }
-    Rect rect;
-    if (!GetWindowRect(handle, out rect)) return default;
-    Rect extendedRect;
-    if (DwmGetWindowAttribute(
-      handle,
-      DwmWindowAttribute.EXTENDED_FRAME_BOUNDS,
-      out extendedRect,
-      Marshal.SizeOf(typeof(Rect))
-    ) != 0) return default;
-    GetWindowThreadProcessId(handle, out int pid);
-    return new Info {
-      handle = handle,
-      pid = pid,
-      isVisible = IsVisible(handle),
-      offset = new Rect(
-        rect.x - extendedRect.x,
-        rect.y - extendedRect.y,
-        rect.w - extendedRect.w,
-        rect.h - extendedRect.h
-      ),
-      x = extendedRect.x,
-      y = extendedRect.y,
-      w = extendedRect.w,
-      h = extendedRect.h,
-    };
-  }
-
   public static (int, int) Resolution() {
     return (
       GetSystemMetrics(SystemMetric.SCREEN_X),
@@ -234,6 +203,39 @@ static class Window {
   // Internal methods
   ///////////////////////
 
+  internal static Info FromHandle(IntPtr handle) {
+    if (handle == null) return default;
+    if (!IsWindow(handle)) return default;
+    if (IsZoomed(handle)) {
+      if (!ShowWindow(handle, ShowStyle.NORMAL_NO_ACTIVATE)) return default;
+    }
+    Rect rect;
+    if (!GetWindowRect(handle, out rect)) return default;
+    Rect extendedRect;
+    if (DwmGetWindowAttribute(
+      handle,
+      DwmWindowAttribute.EXTENDED_FRAME_BOUNDS,
+      out extendedRect,
+      Marshal.SizeOf(typeof(Rect))
+    ) != 0) return default;
+    GetWindowThreadProcessId(handle, out int pid);
+    return new Info {
+      handle = handle,
+      pid = pid,
+      isVisible = IsVisible(handle),
+      offset = new Rect(
+        rect.x - extendedRect.x,
+        rect.y - extendedRect.y,
+        rect.w - extendedRect.w,
+        rect.h - extendedRect.h
+      ),
+      x = extendedRect.x,
+      y = extendedRect.y,
+      w = extendedRect.w,
+      h = extendedRect.h,
+    };
+  }
+
   static bool IsVisible(IntPtr handle) {
     if (!IsWindowVisible(handle)) return false;
     var result = DwmGetWindowAttribute(
@@ -251,5 +253,7 @@ static class Window {
     GetClassName(handle, b, b.Capacity + 1);
     return b.ToString();
   }
+
+}
 
 }

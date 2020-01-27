@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 
-static class Event {
+namespace WinCtl {
+
+public static class Event {
 
   // Events
   ///////////////////////
@@ -30,3 +32,4 @@ static class Event {
 
 }
 
+}

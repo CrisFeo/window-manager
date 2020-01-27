@@ -2,6 +2,8 @@ using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
+namespace WinCtl {
+
 static class WinHook {
 
   // Enums
@@ -112,3 +114,4 @@ static class WinHook {
 
 }
 
+}

@@ -2,7 +2,9 @@ using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 
-static class Time {
+namespace WinCtl {
+
+public static class Time {
 
   // Internal vars
   ///////////////////////
@@ -30,5 +32,7 @@ static class Time {
       if (action != null) action();
     });
   }
+
+}
 
 }

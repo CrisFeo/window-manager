@@ -4,19 +4,36 @@ using System.Threading;
 using System.Windows.Forms;
 
 using Gfx = System.Drawing.Graphics;
+using Clr = System.Drawing.Color;
 
-static class Graphics {
+namespace WinCtl {
+
+public static class Graphics {
 
   // Constants
   ///////////////////////
 
-  static readonly Color TRANSPARENCY_COLOR = Color.Magenta;
+  static readonly Clr TRANSPARENCY_COLOR = Clr.Magenta;
 
   // Structs
   ///////////////////////
 
   public struct Info {
     public Form form;
+  }
+
+  public struct Context {
+    internal Gfx graphics;
+    public Context(Gfx graphics) {
+      this.graphics = graphics;
+    }
+  }
+
+  public struct Color {
+    internal Clr color;
+    public Color(int r, int g, int b) {
+      color = Clr.FromArgb(255, r, g, b);
+    }
   }
 
   // Classes
@@ -61,9 +78,9 @@ static class Graphics {
   // Public methods
   ///////////////////////
 
-  public static Info New(Action<Gfx> onPaint) {
+  public static Info New(Action<Context> onPaint) {
     var form = new GraphicsForm();
-    form.Paint += (s, e) => onPaint(e.Graphics);
+    form.Paint += (s, e) => onPaint(new Context(e.Graphics));
     var t = new Thread(() => Application.Run(form));
     t.SetApartmentState(ApartmentState.STA);
     t.Start();
@@ -75,7 +92,7 @@ static class Graphics {
   }
 
   public static void Rect(
-    Gfx g,
+    Context ctx,
     Color c,
     int t,
     int x,
@@ -83,7 +100,9 @@ static class Graphics {
     int w,
     int h
   ) {
-    g.DrawRectangle(new Pen(c, t), x, y, w, h);
+    ctx.graphics.DrawRectangle(new Pen(c.color, t), x, y, w, h);
   }
+
+}
 
 }

@@ -1,5 +1,5 @@
 DOTNET='/mnt/c/Program Files/dotnet/dotnet.exe'
-SRC_FILES=$(shell find src -name *.cs)
+SRC_FILES=$(shell find src -name '*.cs')
 
 .PHONY: clean
 clean:
@@ -11,7 +11,7 @@ build: $(SRC_FILES)
 
 .PHONY: run
 run: $(SRC_FILES)
-	$(DOTNET) run
+	$(DOTNET) run cfg/config.cs
 
 .PHONY: run-release
 run-release: $(SRC_FILES)

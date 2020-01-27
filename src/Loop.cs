@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Concurrent;
 
+namespace WinCtl {
+
 static class Loop {
 
   // Internal vars
@@ -34,3 +36,4 @@ static class Loop {
 
 }
 
+}

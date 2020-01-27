@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-static class Input {
+namespace WinCtl {
+
+public static class Input {
 
   // Constants
   ///////////////////////
@@ -137,3 +139,4 @@ static class Input {
 
 }
 
+}

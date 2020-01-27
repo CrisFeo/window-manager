@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 
-static class Hotkey {
+namespace WinCtl {
+
+public static class Hotkey {
 
   // Constants
   ///////////////////////
 
-  public static readonly (Key, bool) DISABLE_KEYSTROKE = (DISABLE_KEY, false);
+  internal static readonly (Key, bool) DISABLE_KEYSTROKE = (DISABLE_KEY, false);
 
   const Key DISABLE_KEY = Key.Undefined;
 
@@ -141,5 +143,7 @@ static class Hotkey {
     if (!handlers[mod].ContainsKey(key)) return (default, false);
     return (handlers[mod][key], true);
   }
+
+}
 
 }

@@ -4,7 +4,9 @@ using System.Linq;
 using System.Diagnostics;
 using Microsoft.Win32;
 
-static class Desktop {
+namespace WinCtl {
+
+public static class Desktop {
 
   // Constants
   ///////////////////////
@@ -75,5 +77,7 @@ static class Desktop {
     }
     return true;
   }
+
+}
 
 }

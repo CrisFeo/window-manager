@@ -1,4 +1,6 @@
-enum Key : ushort {
+namespace WinCtl {
+
+public enum Key : ushort {
   None = 0x00,
   LeftButton = 0x01,
   RightButton = 0x02,
@@ -197,4 +199,6 @@ enum Key : ushort {
   Noname = 0xFC,
   PA1 = 0xFD,
   OEMClear = 0xFE,
+}
+
 }
