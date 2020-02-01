@@ -33,7 +33,9 @@ public static class Desktop {
     }
     keystrokes.AddLast((Key.LeftWindows, false));
     keystrokes.AddLast((Key.LeftControl, false));
-    Window.SetActive(Window.ByClass(TASKBAR_CLASS));
+    if (Window.All().Any(w => w.isVisible)) {
+      Window.SetActive(Window.ByClass(TASKBAR_CLASS));
+    }
     Input.Send(keystrokes);
   }
 
