@@ -21,7 +21,6 @@ static class Loop {
       var action = queue.Take();
       if (action != null) action();
     }
-    Environment.Exit(0);
   }
 
   public static bool Invoke(Action action) {

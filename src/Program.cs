@@ -7,6 +7,7 @@ static class Program {
 
   [STAThread]
   static void Main(string[] args) {
+    Console.WriteLine("starting up");
     if (args.Length != 1) {
       Console.WriteLine("no script file path provided");
       return;
@@ -30,8 +31,10 @@ static class Program {
     var isRunning = Script.Execute(assembly);
     if (!isRunning) return;
     Hotkey.MapDown(Hotkey.Mod.Win, Key.Q, false, Loop.Exit);
-    Console.WriteLine("Starting up...");
+    Console.WriteLine($"'{args[0]}' loaded");
     Loop.Run();
+    Console.WriteLine("shutting down");
+    Environment.Exit(0);
   }
 
 }

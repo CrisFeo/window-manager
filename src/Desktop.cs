@@ -55,6 +55,7 @@ public static class Desktop {
       new byte[]{}
     );
     var size = current.Length;
+    if (size == 0) return (null, new byte[][]{});
     var count = ids.Length / size;
     var all = new byte[count][];
     for (var i = 0; i < count; i++) {

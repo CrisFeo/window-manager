@@ -29,6 +29,7 @@ static class User {
   const M MOD_PUSH = M.Win | M.Shift;
   const M MOD_FOCUS = M.Win;
   const M MOD_SWITCH = M.Win;
+  const M MOD_VI = M.Ctrl | M.Alt;
 
   // Methods
   ///////////////////////
@@ -41,6 +42,7 @@ static class User {
     ShiftParentheses();
     TabAlt();
     CapsControl();
+    ViArrows();
   }
 
   static void VirtualDesktop() {
@@ -148,6 +150,14 @@ static class User {
     );
   }
 
+  static void ViArrows() {
+    Action<K> Arrow = k => Send(new[] { (k, true), (k, false) });
+    H.MapDown(MOD_VI, K.H, true, () => Arrow(K.Left));
+    H.MapDown(MOD_VI, K.J, true, () => Arrow(K.Down));
+    H.MapDown(MOD_VI, K.K, true, () => Arrow(K.Up));
+    H.MapDown(MOD_VI, K.L, true, () => Arrow(K.Right));
+  }
+
   // Helper methods
   ///////////////////////
 
@@ -212,6 +222,10 @@ static class User {
       }
       downTime = null;
     });
+  }
+
+  static void Send(IEnumerable<(K, bool)> keystrokes) {
+    Input.Send(new LinkedList<(K, bool)>(keystrokes));
   }
 
   static void SendRaw(IEnumerable<(K, bool)> keystrokes) {
