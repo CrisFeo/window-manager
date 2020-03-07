@@ -30,7 +30,9 @@ static class Program {
     }
     var isRunning = Script.Execute(assembly);
     if (!isRunning) return;
+#if DEBUG
     Hotkey.MapDown(Hotkey.Mod.Win, Key.Q, false, Loop.Exit);
+#endif
     Console.WriteLine($"'{args[0]}' loaded");
     Loop.Run();
     Console.WriteLine("shutting down");

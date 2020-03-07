@@ -1,18 +1,24 @@
 DOTNET=/mnt/c/Program\ Files/dotnet/dotnet.exe
+DOTNET_ARGS=-noLogo -clp:NoSummary
 SRC_FILES=$(shell find src -name '*.cs')
 
 .PHONY: clean
 clean:
-	$(DOTNET) clean -noLogo -clp:NoSummary
+	$(DOTNET) clean $(DOTNET_ARGS)
+	rm -rf bin
 
-.PHONY: build
-build: $(SRC_FILES)
-	$(DOTNET) build -noLogo -clp:NoSummary
+.PHONY: build-debug
+build-debug: $(SRC_FILES)
+	$(DOTNET) build $(DOTNET_ARGS) -c Debug
+
+.PHONY: build-release
+build-release: $(SRC_FILES)
+	$(DOTNET) build $(DOTNET_ARGS) -c Release
 
 .PHONY: run
 run: $(SRC_FILES)
-	$(DOTNET) run cfg/config.cs
+	$(DOTNET) run -c Debug -- cfg/config.cs
 
 .PHONY: run-daemon
 run-daemon:
-	./scripts/forever '$(DOTNET) run cfg/config.cs'
+	./scripts/forever '$(DOTNET) run -c Release -- cfg/config.cs'
