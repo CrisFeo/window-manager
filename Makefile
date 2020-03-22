@@ -7,17 +7,21 @@ clean:
 	$(DOTNET) clean $(DOTNET_ARGS)
 	rm -rf bin
 
-.PHONY: build-debug
-build-debug: $(SRC_FILES)
+.PHONY: build
+build: $(SRC_FILES)
 	$(DOTNET) build $(DOTNET_ARGS) -c Debug
+
+.PHONY: run
+run: $(SRC_FILES)
+	$(DOTNET) run -c Debug -- cfg/config.cs
 
 .PHONY: build-release
 build-release: $(SRC_FILES)
 	$(DOTNET) build $(DOTNET_ARGS) -c Release
 
-.PHONY: run
-run: $(SRC_FILES)
-	$(DOTNET) run -c Debug -- cfg/config.cs
+.PHONY: run-release
+run-release: $(SRC_FILES)
+	$(DOTNET) run -c Release -- cfg/config.cs
 
 .PHONY: run-daemon
 run-daemon:
