@@ -15,7 +15,7 @@ public static class Event {
   ///////////////////////
 
   static Event() {
-    WinHook.Install((e, i) => Loop.Invoke(() => OnEvent(e, i)));
+    WinHook.Install((e, i) => Loop.Invoke($"event-hook {e}", () => OnEvent(e, i)));
   }
 
   // Internal methods

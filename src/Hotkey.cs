@@ -86,7 +86,7 @@ public static class Hotkey {
     }
     if (downHandlers[mods].ContainsKey(key)) return false;
     downHandlers[mods][key] = new DownHandler {
-      action = () => Loop.Invoke(action),
+      action = () => Loop.Invoke($"hotkey-down {mods}-{key}", action),
       isRepeating = isRepeating,
     };
     return true;
@@ -97,7 +97,7 @@ public static class Hotkey {
       upHandlers[mods] = new Dictionary<Key, Action>();
     }
     if (upHandlers[mods].ContainsKey(key)) return false;
-    upHandlers[mods][key] = () => Loop.Invoke(action);
+    upHandlers[mods][key] = () => Loop.Invoke($"hotkey-up {mods}-{key}", action);
     return true;
   }
 

@@ -5,10 +5,18 @@ namespace WinCtl {
 
 static class Loop {
 
+  // Structs
+  ///////////////////////
+
+  struct Invocation {
+    public string name;
+    public Action action;
+  }
+
   // Internal vars
   ///////////////////////
 
-  static BlockingCollection<Action> queue = new BlockingCollection<Action>();
+  static BlockingCollection<Invocation> queue = new BlockingCollection<Invocation>();
   static bool isRunning;
 
   // Public methods
@@ -18,14 +26,25 @@ static class Loop {
     if (isRunning) return;
     isRunning = true;
     while (isRunning) {
-      var action = queue.Take();
-      if (action != null) action();
+      var invocation = queue.Take();
+      if (invocation.action == null) {
+        Console.WriteLine($"invoke {invocation.name}: action was null");
+      } else {
+        try {
+          invocation.action();
+        } catch (Exception e) {
+          Console.WriteLine($"invoke {invocation.name}: exception\n{e.ToString()}");
+        }
+      }
     }
   }
 
-  public static bool Invoke(Action action) {
+  public static bool Invoke(string name, Action action) {
     if (!isRunning) return false;
-    queue.Add(action);
+    queue.Add(new Invocation{
+      name = name,
+      action = action,
+    });
     return true;
   }
 

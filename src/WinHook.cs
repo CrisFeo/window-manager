@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -58,7 +59,7 @@ static class WinHook {
   // Internal vars
   ///////////////////////
 
-  static IntPtr hookHandle;
+  static List<IntPtr> hookHandles = new List<IntPtr>();
   static HookFunc hookDelegate;
   static Action<Event, Window.Info> onEvent;
 
@@ -66,25 +67,18 @@ static class WinHook {
   ///////////////////////
 
   public static bool Install(Action<Event, Window.Info> onEvent) {
-    if (hookHandle != IntPtr.Zero) return false;
+    if (hookHandles.Count != 0) return false;
     WinHook.onEvent = onEvent;
     WinHook.hookDelegate = OnHook;
-    hookHandle = SetWinEventHook(
-      EventType.SYSTEM_FOREGROUND,
-      EventType.OBJECT_LOCATIONCHANGE,
-      Marshal.GetHINSTANCE(Assembly.GetExecutingAssembly().GetModules()[0]),
-      WinHook.hookDelegate,
-      0,
-      0,
-      Flags.OUT_OF_CONTEXT | Flags.SKIP_OWN_PROCESS
-    );
+    AddHook(EventType.SYSTEM_FOREGROUND);
+    AddHook(EventType.OBJECT_LOCATIONCHANGE);
     return true;
   }
 
   public static bool Uninstall() {
-    if (hookHandle == IntPtr.Zero) return false;
-    UnhookWinEvent(hookHandle);
-    hookHandle = IntPtr.Zero;
+    if (hookHandles.Count == 0) return false;
+    foreach (var h in hookHandles) UnhookWinEvent(h);
+    hookHandles.Clear();
     return true;
   }
 
@@ -110,6 +104,18 @@ static class WinHook {
     var w = Window.FromHandle(windowHandle);
     if (!w.isValid || !w.isDisplayable) return;
     if (onEvent != null) onEvent(e, w);
+  }
+
+  static void AddHook(EventType eventType) {
+    hookHandles.Add(SetWinEventHook(
+      eventType,
+      eventType,
+      Marshal.GetHINSTANCE(Assembly.GetExecutingAssembly().GetModules()[0]),
+      WinHook.hookDelegate,
+      0,
+      0,
+      Flags.OUT_OF_CONTEXT | Flags.SKIP_OWN_PROCESS
+    ));
   }
 
 }
