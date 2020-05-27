@@ -11,7 +11,6 @@ public static class Desktop {
   // Constants
   ///////////////////////
 
-  const string TASKBAR_CLASS = "Shell_TrayWnd";
   const string EXPLORER_PATH =
   "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer";
 
@@ -25,18 +24,15 @@ public static class Desktop {
     if (currentIndex == -1 || index == currentIndex) return;
     var movementKey = index < currentIndex ? Key.Left : Key.Right;
     var keystrokes = new LinkedList<(Key, bool)>();
-    keystrokes.AddLast((Key.LeftControl, true));
-    keystrokes.AddLast((Key.LeftWindows, true));
+    keystrokes.AddLast((Key.RightControl, true));
+    keystrokes.AddLast((Key.RightWindows, true));
     for (var i = 0; i < Math.Abs(index - currentIndex); i++) {
       keystrokes.AddLast((movementKey, true));
       keystrokes.AddLast((movementKey, false));
     }
-    keystrokes.AddLast((Key.LeftWindows, false));
-    keystrokes.AddLast((Key.LeftControl, false));
-    if (Window.All().Any(w => w.isVisible)) {
-      Window.SetActive(Window.ByClass(TASKBAR_CLASS));
-    }
-    Input.Send(keystrokes);
+    keystrokes.AddLast((Key.RightWindows, false));
+    keystrokes.AddLast((Key.RightControl, false));
+    Input.SendRaw(keystrokes);
   }
 
   // Internal methods
