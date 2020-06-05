@@ -101,6 +101,11 @@ public static class Hotkey {
     return true;
   }
 
+  public static void Clear() {
+    downHandlers.Clear();
+    upHandlers.Clear();
+  }
+
   // Internal methods
   ///////////////////////
 

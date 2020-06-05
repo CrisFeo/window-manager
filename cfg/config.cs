@@ -31,18 +31,58 @@ static class User {
   const M MOD_SWITCH = M.Win;
   const M MOD_VI = M.Ctrl | M.Alt;
 
+  // Structs
+  ///////////////////////
+
+  enum Mode {
+    General,
+    Game,
+  }
+
+  // Internal vars
+  ///////////////////////
+
+  static Mode mode = Mode.General;
+  static G.Info? activeBorderGraphic;
+
   // Methods
   ///////////////////////
 
   static void Main() {
-    VirtualDesktop();
-    WindowArrangement();
-    WindowFocus();
-    WindowBorder();
-    ShiftParentheses();
-    TabAlt();
-    CapsControl();
-    ViArrows();
+    SetMode();
+  }
+
+  static void SetMode() {
+    H.Clear();
+    Event.Clear();
+    if (activeBorderGraphic.HasValue) {
+      G.Close(activeBorderGraphic.Value);
+      activeBorderGraphic = null;
+    }
+    Map(M.Win, K.F12, () => {
+      switch (mode) {
+        case Mode.General: mode = Mode.Game;    break;
+        case Mode.Game:    mode = Mode.General; break;
+      }
+      SetMode();
+    });
+    switch (mode) {
+      case Mode.General: {
+        VirtualDesktop();
+        WindowArrangement();
+        WindowFocus();
+        WindowBorder();
+        ShiftParentheses();
+        TabAlt();
+        CapsControl();
+        ViArrows();
+        break;
+      }
+      case Mode.Game: {
+        VirtualDesktop();
+        break;
+      }
+    }
   }
 
   static void VirtualDesktop() {
@@ -103,14 +143,14 @@ static class User {
 
   static void WindowBorder() {
     var o = BORDER_OFFSET + BORDER_SIZE / 2;
-    var activeBorderGraphic = G.New(c => {
+    activeBorderGraphic = G.New(c => {
       var a = W.Active();
       if (!a.isValid) return;
       if (BORDER_IGNORE_TITLES.Contains(W.Title(a))) return;
       G.Rect(c, BORDER_COLOR, BORDER_SIZE, a.x-o, a.y-o, a.w+2*o, a.h+2*o);
     });
-    Event.onFocus += w => G.Redraw(activeBorderGraphic);
-    Event.onMove += w => G.Redraw(activeBorderGraphic);
+    Event.onFocus += w => G.Redraw(activeBorderGraphic.Value);
+    Event.onMove += w => G.Redraw(activeBorderGraphic.Value);
   }
 
   static void ShiftParentheses() {

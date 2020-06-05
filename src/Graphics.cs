@@ -87,6 +87,10 @@ public static class Graphics {
     return new Info { form = form };
   }
 
+  public static void Close(Info info) {
+    info.form.Close();
+  }
+
   public static void Redraw(Info info) {
     info.form.Refresh();
   }
