@@ -224,20 +224,25 @@ static class User {
     var tapPress = holdUp
       .Concat(tap.Select(k => (k, true)))
       .Concat(tap.Select(k => (k, false)));
-    long? downTime = null;
+    var l = Lock.New();
+    var downTime = default(long?);
     H.MapDown(M.Any, from, true, () => {
-      if (downTime.HasValue) return;
-      downTime = Time.Now();
-      SendRaw(holdDown);
+      using (Lock.Acquire(l)) {
+        if (downTime.HasValue) return;
+        downTime = Time.Now();
+        SendRaw(holdDown);
+      }
     });
     H.MapUp(M.Any, from, () => {
-      if (!downTime.HasValue) return;
-      if (Time.Now() - downTime.Value > tapDuration) {
-        SendRaw(holdUp);
-      } else {
-        SendRaw(tapPress);
+      using (Lock.Acquire(l)) {
+        if (!downTime.HasValue) return;
+        if (Time.Now() - downTime.Value > tapDuration) {
+          SendRaw(holdUp);
+        } else {
+          SendRaw(tapPress);
+        }
+        downTime = null;
       }
-      downTime = null;
     });
   }
 
@@ -248,23 +253,31 @@ static class User {
       tap.Select(k => (k, true)),
       tap.Select(k => (k, false))
     );
-    long? downTime = null;
+    var l = Lock.New();
+    var downTime = default(long?);
     H.MapDown(M.Any, from, true, () => {
-      if (downTime.HasValue) return;
-      var thisDownTime = downTime = Time.Now();
+      var thisDownTime = default(long?);
+      using (Lock.Acquire(l)) {
+        if (downTime.HasValue) return;
+        thisDownTime = downTime = Time.Now();
+      }
       Time.After(tapDuration, () => {
-        if (downTime != thisDownTime) return;
-        SendRaw(holdDown);
+        using (Lock.Acquire(l)) {
+          if (downTime != thisDownTime) return;
+          SendRaw(holdDown);
+        }
       });
     });
     H.MapUp(M.Any, from, () => {
-      if (!downTime.HasValue) return;
-      if (Time.Now() - downTime.Value > tapDuration) {
-        SendRaw(holdUp);
-      } else {
-        SendRaw(tapPress);
+      using (Lock.Acquire(l)) {
+        if (!downTime.HasValue) return;
+        if (Time.Now() - downTime.Value > tapDuration) {
+          SendRaw(holdUp);
+        } else {
+          SendRaw(tapPress);
+        }
+        downTime = null;
       }
-      downTime = null;
     });
   }
   static void Send(IEnumerable<(K, bool)> keystrokes) {
