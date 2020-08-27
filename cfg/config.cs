@@ -235,11 +235,10 @@ static class User {
     });
     H.MapUp(M.Any, from, () => {
       using (Lock.Acquire(l)) {
-        if (!downTime.HasValue) return;
-        if (Time.Now() - downTime.Value > tapDuration) {
-          SendRaw(holdUp);
-        } else {
+        if (downTime.HasValue && Time.Now() - downTime.Value <= tapDuration) {
           SendRaw(tapPress);
+        } else {
+          SendRaw(holdUp);
         }
         downTime = null;
       }
@@ -270,11 +269,10 @@ static class User {
     });
     H.MapUp(M.Any, from, () => {
       using (Lock.Acquire(l)) {
-        if (!downTime.HasValue) return;
-        if (Time.Now() - downTime.Value > tapDuration) {
-          SendRaw(holdUp);
-        } else {
+        if (downTime.HasValue && Time.Now() - downTime.Value <= tapDuration) {
           SendRaw(tapPress);
+        } else {
+          SendRaw(holdUp);
         }
         downTime = null;
       }
