@@ -1,6 +1,0 @@
-#! /bin/bash
-set -e
-
-while true; do
-/bin/sh -c "$@"
-done

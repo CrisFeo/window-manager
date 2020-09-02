@@ -8,13 +8,13 @@ static class Program {
   [STAThread]
   static void Main(string[] args) {
     try {
-      Console.WriteLine("starting up");
+      Log.Info("starting up");
       if (args.Length != 1) {
-        Console.WriteLine("no script file path provided");
+        Log.Error("no script file path provided");
         return;
       }
       if (!File.Exists(args[0])) {
-        Console.WriteLine($"script file does not exist: {args[0]}");
+        Log.Error($"script file does not exist: {args[0]}");
         return;
       }
       var (assembly, errors) = Script.Compile(
@@ -26,17 +26,15 @@ static class Program {
         }
       );
       if (errors != null) {
-        Console.WriteLine($"compilation error:\n{String.Join("\n", errors)}");
+        Log.Error($"compilation error:\n{String.Join("\n", errors)}");
         return;
       }
-      var isRunning = Script.Execute(assembly);
-      if (!isRunning) return;
-  #if DEBUG
-      Hotkey.MapDown(Hotkey.Mod.Win, Key.Q, false, Loop.Exit);
-  #endif
-      Console.WriteLine($"'{args[0]}' loaded");
-      Loop.Run();
-      Console.WriteLine("shutting down");
+      Loop.Run(() => {
+        var isRunning = Script.Execute(assembly);
+        if (!isRunning) Loop.Exit();
+        Log.Info($"'{args[0]}' loaded");
+      });
+      Log.Info("shutting down");
       Environment.Exit(0);
     } finally {
       Lock.Dispose();

@@ -88,26 +88,28 @@ static class KeyHook {
   ///////////////////////
 
   static IntPtr OnHook(int code, IntPtr typePtr, IntPtr msgPtr) {
-    if (code < 0) {
+    using (Instrument.GreaterThan(50, "key hook")) {
+      if (code < 0) {
+        return CallNextHookEx(hookHandle, code, typePtr, msgPtr);
+      }
+      var msg = (KeyboardMessage)Marshal.PtrToStructure(
+        msgPtr,
+        typeof(KeyboardMessage)
+      );
+      var handled = false;
+      switch ((MsgType)typePtr.ToInt32()) {
+        case MsgType.KEY_DOWN:
+        case MsgType.SYS_KEY_DOWN:
+          handled = onDown((Key)msg.keyCode);
+          break;
+        case MsgType.KEY_UP:
+        case MsgType.SYS_KEY_UP:
+          handled = onUp((Key)msg.keyCode);
+          break;
+      }
+      if (handled) return new IntPtr(-1);
       return CallNextHookEx(hookHandle, code, typePtr, msgPtr);
     }
-    var msg = (KeyboardMessage)Marshal.PtrToStructure(
-      msgPtr,
-      typeof(KeyboardMessage)
-    );
-    var handled = false;
-    switch ((MsgType)typePtr.ToInt32()) {
-      case MsgType.KEY_DOWN:
-      case MsgType.SYS_KEY_DOWN:
-        handled = onDown((Key)msg.keyCode);
-        break;
-      case MsgType.KEY_UP:
-      case MsgType.SYS_KEY_UP:
-        handled = onUp((Key)msg.keyCode);
-        break;
-    }
-    if (handled) return new IntPtr(-1);
-    return CallNextHookEx(hookHandle, code, typePtr, msgPtr);
   }
 
 }

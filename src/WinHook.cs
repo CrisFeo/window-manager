@@ -94,16 +94,18 @@ static class WinHook {
     uint threadId,
     uint time
   ) {
-    Event e;
-    switch (eventType) {
-      case EventType.SYSTEM_FOREGROUND:     e = Event.Focus; break;
-      case EventType.OBJECT_LOCATIONCHANGE: e = Event.Move;  break;
-      default: return;
+    using (Instrument.GreaterThan(50, "win hook")) {
+      Event e;
+      switch (eventType) {
+        case EventType.SYSTEM_FOREGROUND:     e = Event.Focus; break;
+        case EventType.OBJECT_LOCATIONCHANGE: e = Event.Move;  break;
+        default: return;
+      }
+      if (windowHandle == IntPtr.Zero || objectId != 0) return;
+      var w = Window.FromHandle(windowHandle);
+      if (!w.isValid || !w.isDisplayable) return;
+      if (onEvent != null) onEvent(e, w);
     }
-    if (windowHandle == IntPtr.Zero || objectId != 0) return;
-    var w = Window.FromHandle(windowHandle);
-    if (!w.isValid || !w.isDisplayable) return;
-    if (onEvent != null) onEvent(e, w);
   }
 
   static void AddHook(EventType eventType) {
