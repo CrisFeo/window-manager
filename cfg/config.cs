@@ -75,7 +75,7 @@ static class User {
         ShiftParentheses();
         TabAlt();
         CapsControl();
-        ViArrows();
+        ViKeys();
         break;
       }
       case Mode.Game: {
@@ -186,12 +186,14 @@ static class User {
     );
   }
 
-  static void ViArrows() {
+  static void ViKeys() {
     Action<K> Arrow = k => Send(new[] { (k, true), (k, false) });
     H.MapDown(MOD_VI, K.H, true, () => Arrow(K.Left));
     H.MapDown(MOD_VI, K.J, true, () => Arrow(K.Down));
     H.MapDown(MOD_VI, K.K, true, () => Arrow(K.Up));
     H.MapDown(MOD_VI, K.L, true, () => Arrow(K.Right));
+    H.MapDown(MOD_VI, K.Up,   true, () => Arrow(K.Prior));
+    H.MapDown(MOD_VI, K.Down, true, () => Arrow(K.Next));
   }
 
   // Helper methods
