@@ -1,6 +1,5 @@
 using System;
 using System.Drawing;
-using System.Threading;
 using System.Windows.Forms;
 
 using Gfx = System.Drawing.Graphics;
@@ -81,9 +80,7 @@ public static class Graphics {
   public static Info New(Action<Context> onPaint) {
     var form = new GraphicsForm();
     form.Paint += (s, e) => onPaint(new Context(e.Graphics));
-    var t = new Thread(() => Application.Run(form));
-    t.SetApartmentState(ApartmentState.STA);
-    t.Start();
+    var t = Thread.Run("graphics", () => Application.Run(form));
     return new Info { form = form };
   }
 

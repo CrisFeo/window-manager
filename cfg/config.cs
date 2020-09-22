@@ -10,7 +10,7 @@ using K = WinCtl.Key;
 using G = WinCtl.Graphics;
 using Color = WinCtl.Graphics.Color;
 
-static class User {
+static class Script {
 
   // Constants
   ///////////////////////
@@ -24,7 +24,7 @@ static class User {
     "Cortana",
   };
 
-  const long TAP_DURATION = 100;
+  const int TAP_DURATION = 100;
 
   const M MOD_PUSH = M.Win | M.Shift;
   const M MOD_FOCUS = M.Win;
@@ -220,14 +220,15 @@ static class User {
     });
   }
 
-  static void MapTap(long tapDuration, K from, K[] hold, K[] tap) {
+  static void MapTap(int tapMs, K from, K[] hold, K[] tap) {
+    var tapDuration = tapMs / 1000f;
     var holdDown = hold.Select(k => (k, true));
     var holdUp = hold.Select(k => (k, false));
     var tapPress = holdUp
       .Concat(tap.Select(k => (k, true)))
       .Concat(tap.Select(k => (k, false)));
     var l = Lock.New();
-    var downTime = default(long?);
+    var downTime = default(float?);
     H.MapDown(M.Any, from, true, () => {
       using (Lock.Acquire(l)) {
         if (downTime.HasValue) return;
@@ -247,7 +248,8 @@ static class User {
     });
   }
 
-  static void MapTapDelayHold(long tapDuration, K from, K[] hold, K[] tap) {
+  static void MapTapDelayHold(int tapMs, K from, K[] hold, K[] tap) {
+    var tapDuration = tapMs / 1000f;
     var holdDown = hold.Select(k => (k, true));
     var holdUp = hold.Select(k => (k, false));
     var tapPress = Enumerable.Concat(
@@ -255,9 +257,9 @@ static class User {
       tap.Select(k => (k, false))
     );
     var l = Lock.New();
-    var downTime = default(long?);
+    var downTime = default(float?);
     H.MapDown(M.Any, from, true, () => {
-      var thisDownTime = default(long?);
+      var thisDownTime = default(float?);
       using (Lock.Acquire(l)) {
         if (downTime.HasValue) return;
         thisDownTime = downTime = Time.Now();
@@ -280,6 +282,7 @@ static class User {
       }
     });
   }
+
   static void Send(IEnumerable<(K, bool)> keystrokes) {
     Input.Send(new LinkedList<(K, bool)>(keystrokes));
   }
@@ -289,4 +292,3 @@ static class User {
   }
 
 }
-

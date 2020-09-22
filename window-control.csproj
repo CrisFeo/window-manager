@@ -8,7 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="app.manifest" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.4.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.7.0" />
     <Compile Include="src/*.cs" />
   </ItemGroup>
 </Project>

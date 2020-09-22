@@ -52,6 +52,7 @@ static class KeyHook {
   // Internal vars
   ///////////////////////
 
+  static Thread.EventLoop thread;
   static IntPtr hookHandle;
   static HookFunc hookDelegate;
   static Func<Key, bool> onDown;
@@ -64,23 +65,27 @@ static class KeyHook {
     Func<Key, bool> onDown,
     Func<Key, bool> onUp
   ) {
-    if (hookHandle != IntPtr.Zero) return false;
+    if (thread != null) return false;
     KeyHook.onDown = onDown;
     KeyHook.onUp = onUp;
     KeyHook.hookDelegate = OnHook;
-    hookHandle = SetWindowsHookEx(
-      HookType.KEYBOARD_LOW_LEVEL,
-      KeyHook.hookDelegate,
-      Marshal.GetHINSTANCE(Assembly.GetExecutingAssembly().GetModules()[0]),
-      0
-    );
+    thread = Thread.RunWithEventLoop("key hook", () => {
+      hookHandle = SetWindowsHookEx(
+        HookType.KEYBOARD_LOW_LEVEL,
+        KeyHook.hookDelegate,
+        Marshal.GetHINSTANCE(Assembly.GetExecutingAssembly().GetModules()[0]),
+        0
+      );
+    });
     return true;
   }
 
   public static bool Uninstall() {
-    if (hookHandle == IntPtr.Zero) return false;
+    if (thread == null) return false;
     UnhookWindowsHookEx(hookHandle);
     hookHandle = IntPtr.Zero;
+    thread.Join();
+    thread = null;
     return true;
   }
 
@@ -88,7 +93,8 @@ static class KeyHook {
   ///////////////////////
 
   static IntPtr OnHook(int code, IntPtr typePtr, IntPtr msgPtr) {
-    using (Instrument.GreaterThan(50, "key hook")) {
+    using (Instrument.GreaterThan("key hook", 150, Log.Level.Error))
+    using (Instrument.GreaterThan("key hook", 50,  Log.Level.Warn)) {
       if (code < 0) {
         return CallNextHookEx(hookHandle, code, typePtr, msgPtr);
       }

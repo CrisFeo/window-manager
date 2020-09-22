@@ -1,20 +1,21 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
+
+using WinMutex = System.Threading.Mutex;
 
 namespace WinCtl {
 
 public static class Lock {
 
-  // Structs
+  // Classes
   ///////////////////////
 
-  public class Instance : IDisposable {
+  public class Mutex : IDisposable {
 
-    Mutex mutex;
+    WinMutex mutex;
 
-    public Instance() {
-      mutex = new Mutex();
+    public Mutex() {
+      mutex = new WinMutex();
     }
 
     public void Dispose() {
@@ -31,11 +32,11 @@ public static class Lock {
 
   }
 
-  public class HeldInstance : IDisposable {
+  public class HeldMutex : IDisposable {
 
-    Instance instance;
+    Mutex instance;
 
-    public HeldInstance(Instance instance) {
+    public HeldMutex(Mutex instance) {
       this.instance = instance;
       instance.Acquire();
     }
@@ -49,25 +50,25 @@ public static class Lock {
   // Internal vars
   ///////////////////////
 
-  static List<Instance> instances = new List<Instance>();
+  static List<Mutex> instances = new List<Mutex>();
 
   // Public methods
   ///////////////////////
 
 
-  public static void Dispose() {
+  public static void DisposeAll() {
     foreach (var i in instances) i.Dispose();
     instances.Clear();
   }
 
-  public static Instance New() {
-    var instance = new Instance();
+  public static Mutex New() {
+    var instance = new Mutex();
     instances.Add(instance);
     return instance;
   }
 
-  public static HeldInstance Acquire(Instance instance) {
-    return new HeldInstance(instance);
+  public static HeldMutex Acquire(Mutex instance) {
+    return new HeldMutex(instance);
   }
 
 }

@@ -59,6 +59,7 @@ static class WinHook {
   // Internal vars
   ///////////////////////
 
+  static Thread.EventLoop thread;
   static List<IntPtr> hookHandles = new List<IntPtr>();
   static HookFunc hookDelegate;
   static Action<Event, Window.Info> onEvent;
@@ -67,18 +68,22 @@ static class WinHook {
   ///////////////////////
 
   public static bool Install(Action<Event, Window.Info> onEvent) {
-    if (hookHandles.Count != 0) return false;
+    if (thread != null) return false;
     WinHook.onEvent = onEvent;
     WinHook.hookDelegate = OnHook;
-    AddHook(EventType.SYSTEM_FOREGROUND);
-    AddHook(EventType.OBJECT_LOCATIONCHANGE);
+    thread = Thread.RunWithEventLoop("win hook", () => {
+      AddHook(EventType.SYSTEM_FOREGROUND);
+      AddHook(EventType.OBJECT_LOCATIONCHANGE);
+    });
     return true;
   }
 
   public static bool Uninstall() {
-    if (hookHandles.Count == 0) return false;
+    if (thread == null) return false;
     foreach (var h in hookHandles) UnhookWinEvent(h);
     hookHandles.Clear();
+    thread.Join();
+    thread = null;
     return true;
   }
 
@@ -94,7 +99,8 @@ static class WinHook {
     uint threadId,
     uint time
   ) {
-    using (Instrument.GreaterThan(50, "win hook")) {
+    using (Instrument.GreaterThan("win hook", 150, Log.Level.Error))
+    using (Instrument.GreaterThan("win hook", 50,  Log.Level.Warn)) {
       Event e;
       switch (eventType) {
         case EventType.SYSTEM_FOREGROUND:     e = Event.Focus; break;
