@@ -27,6 +27,7 @@ public static class Window {
 
   enum ShowStyle {
     NORMAL_NO_ACTIVATE = 4,
+    MINIMIZED_NO_ACTIVATE = 7,
   }
 
   enum SetWindowPosFlags {
@@ -39,6 +40,14 @@ public static class Window {
   enum DwmWindowAttribute {
     EXTENDED_FRAME_BOUNDS = 9,
     CLOAKED = 14,
+  }
+
+  enum WindowValues {
+   EXTENDED_STYLES = -20,
+  }
+
+  enum ExtendedStyles {
+    TOOL_WINDOW = 0x00000080,
   }
 
   // Handlers
@@ -60,6 +69,11 @@ public static class Window {
     public int h;
     public bool isValid { get => handle != null; }
     public bool isDisplayable { get => w != 0 && h != 0; }
+    public bool Equals(Info i) => handle == i.handle;
+    public override int GetHashCode() => handle.GetHashCode();
+    public static bool operator==(Info a, Info b) => a.Equals(b);
+    public static bool operator!=(Info a, Info b) => !a.Equals(b);
+    public override bool Equals(object o) => (o is Info i) ? Equals(i) : false;
   }
 
   [StructLayout(LayoutKind.Sequential)]
@@ -106,6 +120,9 @@ public static class Window {
 
   [DllImport("user32.dll", SetLastError = true)]
   static extern IntPtr FindWindow(string className, string windowName);
+
+  [DllImport("user32.dll", SetLastError = true)]
+  static extern int GetWindowLong(IntPtr hWnd, WindowValues value);
 
   [DllImport("user32.dll")]
   private static extern int GetWindowTextLength(IntPtr wnd);
@@ -187,6 +204,14 @@ public static class Window {
     return SetForegroundWindow(info.handle);
   }
 
+  public static bool Minimize(Info info) {
+    return ShowWindow(info.handle, ShowStyle.MINIMIZED_NO_ACTIVATE);
+  }
+
+  public static bool Restore(Info info) {
+    return ShowWindow(info.handle, ShowStyle.NORMAL_NO_ACTIVATE);
+  }
+
   public static bool Move(Info info, int? x, int? y, int? w, int? h) {
     if (!ShowWindow(info.handle, ShowStyle.NORMAL_NO_ACTIVATE)) return false;
     var xp = (x ?? info.x)+ info.offset.x;
@@ -218,6 +243,7 @@ public static class Window {
       out extendedRect,
       Marshal.SizeOf(typeof(Rect))
     ) != 0) return default;
+    if ((GetExtendedStyles(handle) & ExtendedStyles.TOOL_WINDOW) != 0) return default;
     GetWindowThreadProcessId(handle, out int pid);
     return new Info {
       handle = handle,
@@ -252,6 +278,10 @@ public static class Window {
     var b = new StringBuilder(1024);
     GetClassName(handle, b, b.Capacity + 1);
     return b.ToString();
+  }
+
+  static ExtendedStyles GetExtendedStyles(IntPtr handle) {
+    return (ExtendedStyles)GetWindowLong(handle, WindowValues.EXTENDED_STYLES);
   }
 
 }

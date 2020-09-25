@@ -111,31 +111,37 @@ static class Script {
   }
 
   static void WindowFocus() {
+    Map(MOD_FOCUS, K.OEM1, a => W.SetActive(W.All()
+      .Where(w => w.isVisible)
+      .Where(w => w != a)
+      .Where(w => w.x == a.x && w.y == a.y)
+      .DefaultIfEmpty(a)
+      .Last()));
     Map(MOD_FOCUS, K.H, a => W.SetActive(W.All()
       .Where(w => w.isVisible)
       .Where(w => w.x < a.x)
-      .OrderBy(w => w.x)
-      .ThenBy(w => Math.Abs(a.y - w.y))
+      .OrderBy(w => Math.Abs(a.y - w.y))
+      .ThenBy(w => Math.Abs(a.x - w.x))
       .DefaultIfEmpty(a)
       .First()));
     Map(MOD_FOCUS, K.L, a => W.SetActive(W.All()
       .Where(w => w.isVisible)
       .Where(w => w.x > a.x)
-      .OrderByDescending(w => w.x)
-      .ThenBy(w => Math.Abs(a.y - w.y))
+      .OrderBy(w => Math.Abs(a.y - w.y))
+      .ThenBy(w => Math.Abs(a.x - w.x))
       .DefaultIfEmpty(a)
       .First()));
     Map(MOD_FOCUS, K.K, a => W.SetActive(W.All()
       .Where(w => w.isVisible)
       .Where(w => w.y < a.y)
-      .OrderBy(w => w.y)
+      .OrderBy(w => Math.Abs(a.y - w.y))
       .ThenBy(w => Math.Abs(a.x - w.x))
       .DefaultIfEmpty(a)
       .First()));
     Map(MOD_FOCUS, K.J, a => W.SetActive(W.All()
       .Where(w => w.isVisible)
       .Where(w => w.y > a.y)
-      .OrderByDescending(w => w.y)
+      .OrderBy(w => Math.Abs(a.y - w.y))
       .ThenBy(w => Math.Abs(a.x - w.x))
       .DefaultIfEmpty(a)
       .First()));
