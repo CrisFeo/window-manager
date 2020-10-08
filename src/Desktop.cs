@@ -22,11 +22,12 @@ public static class Desktop {
     if (index < 0 || index >= all.Length) return;
     var currentIndex = IndexOf(all, current);
     if (currentIndex == -1 || index == currentIndex) return;
+    var steps = Math.Abs(index - currentIndex);
     var movementKey = index < currentIndex ? Key.Left : Key.Right;
     var keystrokes = new LinkedList<(Key, bool)>();
     keystrokes.AddLast((Key.RightControl, true));
     keystrokes.AddLast((Key.RightWindows, true));
-    for (var i = 0; i < Math.Abs(index - currentIndex); i++) {
+    for (var i = 0; i < steps; i++) {
       keystrokes.AddLast((movementKey, true));
       keystrokes.AddLast((movementKey, false));
     }
