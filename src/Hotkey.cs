@@ -106,6 +106,10 @@ public static class Hotkey {
     upHandlers.Clear();
   }
 
+  public static HashSet<Key> CurrentModifiers() {
+    return heldKeys;
+  }
+
   // Internal methods
   ///////////////////////
 
@@ -130,7 +134,7 @@ public static class Hotkey {
     if (CTRL_KEYS.Contains(key))  heldMods &= ~Mod.Ctrl;
     if (SHIFT_KEYS.Contains(key)) heldMods &= ~Mod.Shift;
     if (WIN_KEYS.Contains(key))   heldMods &= ~Mod.Win;
-    if (!heldKeys.Remove(key)) return false;
+    heldKeys.Remove(key);
     if (isDisabled) return false;
     var (handler, exists) = FindHandler(upHandlers, heldMods, key);
     if (!exists) (handler, exists) = FindHandler(upHandlers, Mod.Any, key);

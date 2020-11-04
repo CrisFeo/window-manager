@@ -12,7 +12,7 @@ public static class Desktop {
   ///////////////////////
 
   const string EXPLORER_PATH =
-  "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer";
+  "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer";
 
   // Public methods
   ///////////////////////
@@ -25,15 +25,15 @@ public static class Desktop {
     var steps = Math.Abs(index - currentIndex);
     var movementKey = index < currentIndex ? Key.Left : Key.Right;
     var keystrokes = new LinkedList<(Key, bool)>();
-    keystrokes.AddLast((Key.RightControl, true));
     keystrokes.AddLast((Key.RightWindows, true));
+    keystrokes.AddLast((Key.RightControl, true));
     for (var i = 0; i < steps; i++) {
       keystrokes.AddLast((movementKey, true));
       keystrokes.AddLast((movementKey, false));
     }
-    keystrokes.AddLast((Key.RightWindows, false));
     keystrokes.AddLast((Key.RightControl, false));
-    Input.SendRaw(keystrokes);
+    keystrokes.AddLast((Key.RightWindows, false));
+    Input.Send(keystrokes);
   }
 
   // Internal methods
@@ -52,7 +52,10 @@ public static class Desktop {
       new byte[]{}
     );
     var size = current.Length;
-    if (size == 0) return (null, new byte[][]{});
+    if (size == 0) {
+      Log.Warn("virtual desktop registry list was empty");
+      return (null, new byte[][]{});
+    }
     var count = ids.Length / size;
     var all = new byte[count][];
     for (var i = 0; i < count; i++) {

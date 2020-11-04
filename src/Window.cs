@@ -15,6 +15,7 @@ public static class Window {
   static readonly string[] IGNORED_WINDOW_CLASSES = new[] {
     "Progman",
     "Shell_TrayWnd",
+    "Winit Thread Event Target",
   };
 
   // Enums

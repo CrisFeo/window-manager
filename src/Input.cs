@@ -21,6 +21,15 @@ public static class Input {
     Key.RightWindows,
   };
 
+  static readonly HashSet<Key> MASKED_MODIFIERS = new HashSet<Key> {
+    Key.LeftMenu,
+    Key.RightMenu,
+    Key.LeftWindows,
+    Key.RightWindows,
+  };
+
+  const Key MASK_KEY = Key.NoMapping;
+
   // Enums
   ///////////////////////
 
@@ -97,7 +106,13 @@ public static class Input {
   public static void Send(LinkedList<(Key, bool)> keystrokes) {
     foreach (var modifier in MODIFIERS) {
       if (!IsDown(modifier)) continue;
-      keystrokes.AddFirst((modifier, false));
+      if (MASKED_MODIFIERS.Contains(modifier)) {
+        keystrokes.AddFirst((MASK_KEY, false));
+        keystrokes.AddFirst((modifier, false));
+        keystrokes.AddFirst((MASK_KEY, true));
+      } else {
+        keystrokes.AddFirst((modifier, false));
+      }
       keystrokes.AddLast((modifier, true));
     }
     SendInput(keystrokes);

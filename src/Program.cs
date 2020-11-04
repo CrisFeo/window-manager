@@ -20,11 +20,12 @@ static class Program {
         return;
       }
       var (run, ok) = Compile(args[0]);
-      if (!ok) return;
-      Loop.Start(() => {
-        run();
-        Log.Info($"'{args[0]}' loaded");
-      });
+      if (ok) {
+        Loop.Start(() => {
+          run();
+          Log.Info($"'{args[0]}' loaded");
+        });
+      }
       Log.Info("shutting down");
       Environment.Exit(0);
     } finally {

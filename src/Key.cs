@@ -199,6 +199,7 @@ public enum Key : ushort {
   Noname = 0xFC,
   PA1 = 0xFD,
   OEMClear = 0xFE,
+  NoMapping = 0xFF,
 }
 
 }

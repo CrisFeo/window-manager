@@ -8,8 +8,6 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Formatting;
 
-namespace WinCtl {
-
 class AssemblyGenerator {
 
   // Internal vars
@@ -58,7 +56,7 @@ class AssemblyGenerator {
       if (!result.Success) {
         var errors = result.Diagnostics
           .Where(d => d.IsWarningAsError || d.Severity == DiagnosticSeverity.Error)
-          .Select(f => $"{f.Id}: {f.GetMessage()}")
+          .Select(f => $"{f.Id}: {f.ToString()}")
           .ToArray();
         return (null, errors);
       }
@@ -68,6 +66,3 @@ class AssemblyGenerator {
   }
 
 }
-
-}
-
