@@ -9,6 +9,6 @@
   <ItemGroup>
     <None Include="app.manifest" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.7.0" />
-    <Compile Include="src/*.cs" />
+    <Compile Include="src/**/*.cs" />
   </ItemGroup>
 </Project>

@@ -177,6 +177,7 @@ public enum Key : ushort {
   ProcessKey = 0xE5,
   ICOClear = 0xE6,
   Packet = 0xE7,
+  Unassigned = 0xE8,
   OEMReset = 0xE9,
   OEMJump = 0xEA,
   OEMPA1 = 0xEB,

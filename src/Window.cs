@@ -68,7 +68,7 @@ public static class Window {
     public int y;
     public int w;
     public int h;
-    public bool isValid { get => handle != null; }
+    public bool isValid { get => handle != default(IntPtr); }
     public bool isDisplayable { get => w != 0 && h != 0; }
     public bool Equals(Info i) => handle == i.handle;
     public override int GetHashCode() => handle.GetHashCode();
@@ -182,11 +182,11 @@ public static class Window {
   }
 
   public static Info ByName(string name) {
-    return FromHandle(FindWindow(default, name));
+    return FromHandle(FindWindow(null, name), false);
   }
 
   public static Info ByClass(string className) {
-    return FromHandle(FindWindow(className, default));
+    return FromHandle(FindWindow(className, null), false);
   }
 
   public static string Title(Info info) {
@@ -229,23 +229,26 @@ public static class Window {
   // Internal methods
   ///////////////////////
 
-  internal static Info FromHandle(IntPtr handle) {
-    if (handle == null) return default;
-    if (!IsWindow(handle)) return default;
-    if (IsZoomed(handle)) {
-      if (!ShowWindow(handle, ShowStyle.NORMAL_NO_ACTIVATE)) return default;
+  internal static Info FromHandle(IntPtr handle, bool performChecks = true) {
+    if (handle == default(IntPtr)) return default;
+    if (performChecks) {
+      if (!IsWindow(handle)) return default;
+      if ((GetExtendedStyles(handle) & ExtendedStyles.TOOL_WINDOW) != 0) return default;
+      if (IsZoomed(handle)) {
+        if (!ShowWindow(handle, ShowStyle.NORMAL_NO_ACTIVATE)) return default;
+      }
     }
-    Rect rect;
-    if (!GetWindowRect(handle, out rect)) return default;
-    Rect extendedRect;
-    if (DwmGetWindowAttribute(
+    var ok = false;
+    ok = GetWindowRect(handle, out var rect);
+    if (performChecks && !ok) return default;
+    ok = DwmGetWindowAttribute(
       handle,
       DwmWindowAttribute.EXTENDED_FRAME_BOUNDS,
-      out extendedRect,
+      out Rect extendedRect,
       Marshal.SizeOf(typeof(Rect))
-    ) != 0) return default;
-    if ((GetExtendedStyles(handle) & ExtendedStyles.TOOL_WINDOW) != 0) return default;
-    GetWindowThreadProcessId(handle, out int pid);
+    ) == 0;
+    if (performChecks && !ok) return default;
+    GetWindowThreadProcessId(handle, out var pid);
     return new Info {
       handle = handle,
       pid = pid,

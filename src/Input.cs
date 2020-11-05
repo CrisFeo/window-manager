@@ -106,15 +106,11 @@ public static class Input {
   public static void Send(LinkedList<(Key, bool)> keystrokes) {
     foreach (var modifier in MODIFIERS) {
       if (!IsDown(modifier)) continue;
-      if (MASKED_MODIFIERS.Contains(modifier)) {
-        keystrokes.AddFirst((MASK_KEY, false));
-        keystrokes.AddFirst((modifier, false));
-        keystrokes.AddFirst((MASK_KEY, true));
-      } else {
-        keystrokes.AddFirst((modifier, false));
-      }
+      keystrokes.AddFirst((modifier, false));
       keystrokes.AddLast((modifier, true));
     }
+    keystrokes.AddFirst((MASK_KEY, true));
+    keystrokes.AddLast((MASK_KEY, false));
     SendInput(keystrokes);
   }
 

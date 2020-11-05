@@ -59,15 +59,9 @@ static class Script {
       G.Close(activeBorderGraphic.Value);
       activeBorderGraphic = null;
     }
-    Map(M.Win, K.F12, () => {
-      switch (mode) {
-        case Mode.General: mode = Mode.Game;    break;
-        case Mode.Game:    mode = Mode.General; break;
-      }
-      SetMode();
-    });
     switch (mode) {
       case Mode.General: {
+        ModeSwitcher();
         VirtualDesktop();
         WindowArrangement();
         WindowFocus();
@@ -79,10 +73,21 @@ static class Script {
         break;
       }
       case Mode.Game: {
+        ModeSwitcher();
         VirtualDesktop();
         break;
       }
     }
+  }
+
+  static void ModeSwitcher() {
+    Map(M.Win, K.F12, () => {
+      switch (mode) {
+        case Mode.General: mode = Mode.Game;    break;
+        case Mode.Game:    mode = Mode.General; break;
+      }
+      SetMode();
+    });
   }
 
   static void VirtualDesktop() {
