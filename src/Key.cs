@@ -8,7 +8,6 @@ public enum Key : ushort {
   MiddleButton = 0x04,
   ExtraButton1 = 0x05,
   ExtraButton2 = 0x06,
-  Undefined = 0x07,
   Back = 0x08,
   Tab = 0x09,
   Clear = 0x0C,

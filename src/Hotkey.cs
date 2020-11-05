@@ -8,9 +8,9 @@ public static class Hotkey {
   // Constants
   ///////////////////////
 
-  internal static readonly (Key, bool) DISABLE_KEYSTROKE = (DISABLE_KEY, false);
+  const Key DISABLE_KEY = Key.NoMapping;
 
-  const Key DISABLE_KEY = Key.Undefined;
+  internal static readonly (Key, bool) DISABLE_KEYSTROKE = (DISABLE_KEY, false);
 
   static readonly HashSet<Key> ALT_KEYS = new HashSet<Key> {
     Key.LeftMenu,
@@ -129,12 +129,12 @@ public static class Hotkey {
   }
 
   static bool OnUp(Key key) {
-    if (key == DISABLE_KEY) isDisabled = !isDisabled;
     if (ALT_KEYS.Contains(key))   heldMods &= ~Mod.Alt;
     if (CTRL_KEYS.Contains(key))  heldMods &= ~Mod.Ctrl;
     if (SHIFT_KEYS.Contains(key)) heldMods &= ~Mod.Shift;
     if (WIN_KEYS.Contains(key))   heldMods &= ~Mod.Win;
     heldKeys.Remove(key);
+    if (key == DISABLE_KEY) isDisabled = !isDisabled;
     if (isDisabled) return false;
     var (handler, exists) = FindHandler(upHandlers, heldMods, key);
     if (!exists) (handler, exists) = FindHandler(upHandlers, Mod.Any, key);

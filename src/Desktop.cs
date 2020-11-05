@@ -44,7 +44,7 @@ public static class Desktop {
     presses.AddLast((Key.RightMenu, false));
     AllowSetForegroundWindow(-1);
     Instance.SwitchDesktop(GetDesktop(index));
-    Input.Send(presses);
+    Input.SendRaw(presses);
   }
 
   public static int Count() {

@@ -28,7 +28,7 @@ public static class Input {
     Key.RightWindows,
   };
 
-  const Key MASK_KEY = Key.NoMapping;
+  const Key MASK_KEY = Key.Unassigned;
 
   // Enums
   ///////////////////////
@@ -97,6 +97,12 @@ public static class Input {
   [DllImport("user32.dll")]
   static extern int SendInput(int count, InputMsg[] inputs, int size);
 
+  [DllImport("user32.dll")]
+  static extern IntPtr GetMessageExtraInfo();
+
+  [DllImport("user32.dll")]
+  static extern short MapVirtualKey(short code, int mapType);
+
   [DllImport("User32.dll")]
   static extern ushort GetAsyncKeyState(Key key);
 
@@ -138,11 +144,11 @@ public static class Input {
       type = Type.Key,
       data = new InputData {
         keyboard = new Keyboard {
-          key = key,
-          scan = 0,
-          flags = isDown ? 0 : KeyFlags.KeyUp,
+          key = 0,
+          scan = MapVirtualKey((short)key, 0),
+          flags = KeyFlags.ScanCode | (isDown ? 0 : KeyFlags.KeyUp),
           time = 0,
-          extraInfo = IntPtr.Zero,
+          extraInfo = GetMessageExtraInfo(),
         },
       },
     };
