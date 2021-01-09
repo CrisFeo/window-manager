@@ -52,7 +52,6 @@ static class KeyHook {
   // Internal vars
   ///////////////////////
 
-  static Thread.EventLoop thread;
   static IntPtr hookHandle;
   static HookFunc hookDelegate;
   static Func<Key, bool> onDown;
@@ -65,11 +64,11 @@ static class KeyHook {
     Func<Key, bool> onDown,
     Func<Key, bool> onUp
   ) {
-    if (thread != null) return false;
+    if (hookHandle != IntPtr.Zero) return false;
     KeyHook.onDown = onDown;
     KeyHook.onUp = onUp;
     KeyHook.hookDelegate = OnHook;
-    thread = Thread.RunWithEventLoop("key hook", () => {
+    EventLoop.Invoke("key hook", () => {
       hookHandle = SetWindowsHookEx(
         HookType.KEYBOARD_LOW_LEVEL,
         KeyHook.hookDelegate,
@@ -81,11 +80,9 @@ static class KeyHook {
   }
 
   public static bool Uninstall() {
-    if (thread == null) return false;
+    if (hookHandle == IntPtr.Zero) return false;
     UnhookWindowsHookEx(hookHandle);
     hookHandle = IntPtr.Zero;
-    thread.Join();
-    thread = null;
     return true;
   }
 

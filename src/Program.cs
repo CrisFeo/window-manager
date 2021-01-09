@@ -21,6 +21,7 @@ static class Program {
       }
       var (run, ok) = Compile(args[0]);
       if (ok) {
+        EventLoop.Start();
         Loop.Start(() => {
           run();
           Log.Info($"'{args[0]}' loaded");
@@ -29,6 +30,7 @@ static class Program {
       Log.Info("shutting down");
       Environment.Exit(0);
     } finally {
+      EventLoop.Stop();
       Loop.Stop();
       Lock.DisposeAll();
       KeyHook.Uninstall();

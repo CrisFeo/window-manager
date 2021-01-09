@@ -21,7 +21,7 @@ static class Loop {
 
   static BlockingCollection<Invocation> inputQueue = new BlockingCollection<Invocation>();
   static PriorityQueue<Invocation> delayQueue  = new PriorityQueue<Invocation>();
-  static Thread.Basic thread;
+  static Thread.Instance thread;
   static bool isRunning;
 
   // Public methods
@@ -30,7 +30,7 @@ static class Loop {
   public static void Start(Action initialize) {
     if (thread != null) return;
     isRunning = true;
-    thread = Thread.Run("loop", () => {
+    thread = Thread.Run("main loop", () => {
       initialize();
       MainLoop();
     });

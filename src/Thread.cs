@@ -11,23 +11,11 @@ static class Thread {
   // Classes
   ///////////////////////
 
-  public class Basic {
+  public class Instance {
 
     public WinThread thread;
 
     public void Join() {
-      thread.Join();
-    }
-
-  }
-
-  public class EventLoop {
-
-    public WinThread thread;
-    public bool isJoining;
-
-    public void Join() {
-      isJoining = true;
       thread.Join();
     }
 
@@ -55,31 +43,15 @@ static class Thread {
   // Public methods
   ///////////////////////
 
-  public static Basic Run(string name, Action action) {
-    var basic = new Basic();
-    basic.thread = new WinThread(() => {
-      Log.Info($"started basic thread with name {name}");
+  public static Instance Run(string name, Action action) {
+    var instance = new Instance();
+    instance.thread = new WinThread(() => {
+      Log.Info($"started thread with name {name}");
       action();
     });
-    basic.thread.SetApartmentState(ApartmentState.STA);
-    basic.thread.Start();
-    return basic;
-  }
-
-  public static EventLoop RunWithEventLoop(string name, Action action) {
-    var eventLoop = new EventLoop();
-    eventLoop.thread = new WinThread(() => {
-      Log.Info($"started event thread with name {name}");
-      action();
-      var msg = new IntPtr();
-      while (!eventLoop.isJoining && GetMessage(msg, IntPtr.Zero, 0, 0)) {
-        TranslateMessage(msg);
-        DispatchMessage(msg);
-      }
-    });
-    eventLoop.thread.SetApartmentState(ApartmentState.STA);
-    eventLoop.thread.Start();
-    return eventLoop;
+    instance.thread.SetApartmentState(ApartmentState.STA);
+    instance.thread.Start();
+    return instance;
   }
 
 }

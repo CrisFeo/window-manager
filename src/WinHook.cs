@@ -59,7 +59,6 @@ static class WinHook {
   // Internal vars
   ///////////////////////
 
-  static Thread.EventLoop thread;
   static List<IntPtr> hookHandles = new List<IntPtr>();
   static HookFunc hookDelegate;
   static Action<Event, Window.Info> onEvent;
@@ -68,10 +67,10 @@ static class WinHook {
   ///////////////////////
 
   public static bool Install(Action<Event, Window.Info> onEvent) {
-    if (thread != null) return false;
+    if (hookHandles.Count != 0) return false;
     WinHook.onEvent = onEvent;
     WinHook.hookDelegate = OnHook;
-    thread = Thread.RunWithEventLoop("win hook", () => {
+    EventLoop.Invoke("win hook", () => {
       AddHook(EventType.SYSTEM_FOREGROUND);
       AddHook(EventType.OBJECT_LOCATIONCHANGE);
     });
@@ -79,11 +78,9 @@ static class WinHook {
   }
 
   public static bool Uninstall() {
-    if (thread == null) return false;
+    if (hookHandles.Count == 0) return false;
     foreach (var h in hookHandles) UnhookWinEvent(h);
     hookHandles.Clear();
-    thread.Join();
-    thread = null;
     return true;
   }
 
