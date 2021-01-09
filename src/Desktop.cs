@@ -2,89 +2,90 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using VirtualDesktops;
+using Microsoft.Win32;
 
 namespace WinCtl {
 
 public static class Desktop {
 
-  // DLL imports
+  // Constants
   ///////////////////////
 
-  [DllImport("user32.dll")]
-  static extern bool AllowSetForegroundWindow(int dwProcessId);
+  const string EXPLORER_PATH =
+  "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer";
 
   // Internal vars
   ///////////////////////
 
-  static IVirtualDesktopManagerInternal Instance;
-
-  // Static constructor
-  ///////////////////////
-
-  static Desktop() {
-    var shell = (IServiceProvider10)Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_ImmersiveShell));
-    Instance = (IVirtualDesktopManagerInternal)shell.QueryService(Guids.CLSID_VirtualDesktopManagerInternal, typeof(IVirtualDesktopManagerInternal).GUID);
-  }
+    static Lock.Mutex actionLock = Lock.New();
 
   // Public methods
   ///////////////////////
 
-  public static void GoTo(int index) {
-    if (index < 0 || index >= Count()) return;
-    var presses = new LinkedList<(Key, bool)>();
-    presses.AddLast((Key.RightMenu, true));
-    presses.AddLast((Key.RightShift, true));
-    presses.AddLast((Key.Escape, true));
-    presses.AddLast((Key.Escape, false));
-    presses.AddLast((Key.RightShift, false));
-    presses.AddLast((Key.Escape, true));
-    presses.AddLast((Key.Escape, false));
-    presses.AddLast((Key.RightMenu, false));
-    AllowSetForegroundWindow(-1);
-    Instance.SwitchDesktop(GetDesktop(index));
-    Input.SendRaw(presses);
-  }
-
-  public static int Count() {
-    return Instance.GetCount();
-  }
-
-  public static int Current() {
-    return GetDesktopIndex(Instance.GetCurrentDesktop());
+  public static void GoTo(int target) {
+    using (Lock.Acquire(actionLock)) {
+      var (current, total) = Fetch();
+      if (target < 0 || target >= total) return;
+      if (current == -1 || target == current) return;
+      var steps = Math.Abs(target - current);
+      var movementKey = target < current ? Key.Left : Key.Right;
+      var keystrokes = new LinkedList<(Key, bool)>();
+      keystrokes.AddLast((Key.RightWindows, true));
+      keystrokes.AddLast((Key.RightControl, true));
+      for (var i = 0; i < steps; i++) {
+        keystrokes.AddLast((movementKey, true));
+        keystrokes.AddLast((movementKey, false));
+      }
+      keystrokes.AddLast((Key.RightControl, false));
+      keystrokes.AddLast((Key.RightWindows, false));
+      Input.SendRaw(keystrokes);
+    }
   }
 
   // Internal methods
   ///////////////////////
 
-  static IVirtualDesktop GetDesktop(int index) {
-    var count = Instance.GetCount();
-    if (index < 0 || index >= count)
-      throw new ArgumentOutOfRangeException("index");
-    var desktops = default(IObjectArray);
-    Instance.GetDesktops(out desktops);
-    var obj = default(object);
-    desktops.GetAt(index, typeof(IVirtualDesktop).GUID, out obj);
-    Marshal.ReleaseComObject(desktops);
-    return (IVirtualDesktop)obj;
-  }
-
-  static int GetDesktopIndex(IVirtualDesktop desktop) {
-    var index = -1;
-    var IdSearch = desktop.GetId();
-    var desktops = default(IObjectArray);
-    Instance.GetDesktops(out desktops);
-    var obj = default(object);
-    for (int i = 0; i < Instance.GetCount(); i++) {
-      desktops.GetAt(i, typeof(IVirtualDesktop).GUID, out obj);
-      if (IdSearch.CompareTo(((IVirtualDesktop)obj).GetId()) == 0) {
-        index = i;
+  static (int, int) Fetch() {
+    var sessionId = Process.GetCurrentProcess().SessionId;
+    var current = (byte[])Registry.GetValue(
+      $"{EXPLORER_PATH}\\SessionInfo\\{sessionId}\\VirtualDesktops",
+      "CurrentVirtualDesktop",
+      new byte[]{}
+    );
+    var idSize = current.Length;
+    if (idSize == 0) {
+      Log.Warn("current desktop id was empty");
+      return (-1, 0);
+    }
+    var all = (byte[])Registry.GetValue(
+      $"{EXPLORER_PATH}\\VirtualDesktops",
+      "VirtualDesktopIDs",
+      new byte[]{}
+    );
+    if (all.Length == 0) {
+      Log.Warn("all desktop ids was empty");
+      return (-1, 0);
+    }
+    var currentIndex = -1;
+    var count = all.Length / idSize;
+    for (var i = 0; i < count; i++) {
+      if (EqualAt(current, all, i * idSize)) {
+        currentIndex = i;
         break;
       }
     }
-    Marshal.ReleaseComObject(desktops);
-    return index;
+    if (currentIndex == -1) {
+      Log.Warn("current desktop id could not be indexed");
+      return (-1, 0);
+    }
+    return (currentIndex, count);
+  }
+
+  static bool EqualAt(byte[] a, byte[] b, int index) {
+    for (var i = 0; i < a.Length; i++) {
+      if (a[i] != b[index + i]) return false;
+    }
+    return true;
   }
 
 }
