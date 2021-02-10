@@ -70,6 +70,7 @@ static class Script {
         TabAlt();
         CapsControl();
         ViKeys();
+        Terminal();
         break;
       }
       case Mode.Game: {
@@ -199,12 +200,16 @@ static class Script {
 
   static void ViKeys() {
     Action<K> Arrow = k => Send(new[] { (k, true), (k, false) });
-    H.MapDown(MOD_VI, K.H, true, () => Arrow(K.Left));
-    H.MapDown(MOD_VI, K.J, true, () => Arrow(K.Down));
-    H.MapDown(MOD_VI, K.K, true, () => Arrow(K.Up));
-    H.MapDown(MOD_VI, K.L, true, () => Arrow(K.Right));
+    H.MapDown(MOD_VI, K.H,    true, () => Arrow(K.Left));
+    H.MapDown(MOD_VI, K.J,    true, () => Arrow(K.Down));
+    H.MapDown(MOD_VI, K.K,    true, () => Arrow(K.Up));
+    H.MapDown(MOD_VI, K.L,    true, () => Arrow(K.Right));
     H.MapDown(MOD_VI, K.Up,   true, () => Arrow(K.Prior));
     H.MapDown(MOD_VI, K.Down, true, () => Arrow(K.Next));
+  }
+
+  static void Terminal() {
+    Map(M.Win, K.T, () => Execute.ShellRun(@"c:\tools\alacritty\terminal.lnk"));
   }
 
   // Helper methods
