@@ -77,7 +77,7 @@ public static class Input {
 
   [StructLayout(LayoutKind.Sequential)]
   struct Keyboard {
-    public Key key;
+    public short key;
     public short scan;
     public KeyFlags flags;
     public int time;
@@ -111,12 +111,12 @@ public static class Input {
 
   public static void Send(LinkedList<(Key, bool)> keystrokes) {
     foreach (var modifier in MODIFIERS) {
-      if (!IsDown(modifier)) continue;
+      if (!Hotkey.IsDown(modifier)) continue;
+      keystrokes.AddFirst((MASK_KEY, false));
       keystrokes.AddFirst((modifier, false));
+      keystrokes.AddFirst((MASK_KEY, true));
       keystrokes.AddLast((modifier, true));
     }
-    keystrokes.AddFirst((MASK_KEY, true));
-    keystrokes.AddLast((MASK_KEY, false));
     SendInput(keystrokes);
   }
 
@@ -126,10 +126,6 @@ public static class Input {
 
   // Internal methods
   ///////////////////////
-
-  static bool IsDown(Key key) {
-    return GetAsyncKeyState(key) >> 15 == 1;
-  }
 
   static void SendInput(LinkedList<(Key, bool)> keystrokes) {
     keystrokes.AddFirst(Hotkey.DISABLE_KEYSTROKE);
@@ -144,14 +140,39 @@ public static class Input {
       type = Type.Key,
       data = new InputData {
         keyboard = new Keyboard {
-          key = 0,
-          scan = MapVirtualKey((short)key, 0),
-          flags = KeyFlags.ScanCode | (isDown ? 0 : KeyFlags.KeyUp),
+          key = (short)key,
+          scan = (short)(MapVirtualKey((short)key, 0) & 0xFFU),
+          flags = 0
+            | (isDown ? 0 : KeyFlags.KeyUp)
+            | (IsExtended(key) ? KeyFlags.ExtendedKey : 0),
           time = 0,
           extraInfo = GetMessageExtraInfo(),
         },
       },
     };
+  }
+
+  static bool IsExtended(Key key) {
+    if (key == Key.Menu)         return true;
+    if (key == Key.LeftMenu)     return true;
+    if (key == Key.RightMenu)    return true;
+    if (key == Key.Control)      return true;
+    if (key == Key.RightControl) return true;
+    if (key == Key.Insert)       return true;
+    if (key == Key.Delete)       return true;
+    if (key == Key.Home)         return true;
+    if (key == Key.End)          return true;
+    if (key == Key.Prior)        return true;
+    if (key == Key.Next)         return true;
+    if (key == Key.Right)        return true;
+    if (key == Key.Up)           return true;
+    if (key == Key.Left)         return true;
+    if (key == Key.Down)         return true;
+    if (key == Key.NumLock)      return true;
+    if (key == Key.Cancel)       return true;
+    if (key == Key.Snapshot)     return true;
+    if (key == Key.Divide)       return true;
+    return false;
   }
 
 }

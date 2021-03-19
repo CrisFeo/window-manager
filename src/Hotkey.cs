@@ -110,6 +110,10 @@ public static class Hotkey {
     return heldKeys;
   }
 
+  public static bool IsDown(Key key) {
+    return heldKeys.Contains(key);
+  }
+
   // Internal methods
   ///////////////////////
 

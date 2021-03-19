@@ -13,7 +13,7 @@ build: $(SRC_FILES)
 
 .PHONY: run
 run: $(SRC_FILES)
-	$(DOTNET) run -c Debug -- cfg/config.cs | tee ./log/debug.log
+	$(DOTNET) run -c Debug -- cfg/config.cs 2>&1 | tee ./log/debug.log
 
 .PHONY: build-release
 build-release: $(SRC_FILES)
@@ -21,4 +21,4 @@ build-release: $(SRC_FILES)
 
 .PHONY: run-release
 run-release: $(SRC_FILES)
-	$(DOTNET) run -c Release -- cfg/config.cs | tee ./log/release.log
+	$(DOTNET) run -c Release -- cfg/config.cs 2>&1 | tee ./log/release.log

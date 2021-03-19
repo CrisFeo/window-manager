@@ -24,12 +24,19 @@ public static class Desktop {
 
   public static void GoTo(int target) {
     using (Lock.Acquire(actionLock)) {
+      var keystrokes = new LinkedList<(Key, bool)>();
+      var w = Window.ByName("Search");
+      if (w.isValid && w.isVisible) {
+        keystrokes.AddLast((Key.RightWindows, true));
+        keystrokes.AddLast((Key.RightWindows, false));
+        Input.Send(keystrokes);
+        keystrokes = new LinkedList<(Key, bool)>();
+      }
       var (current, total) = Fetch();
       if (target < 0 || target >= total) return;
       if (current == -1 || target == current) return;
       var steps = Math.Abs(target - current);
       var movementKey = target < current ? Key.Left : Key.Right;
-      var keystrokes = new LinkedList<(Key, bool)>();
       keystrokes.AddLast((Key.RightWindows, true));
       keystrokes.AddLast((Key.RightControl, true));
       for (var i = 0; i < steps; i++) {

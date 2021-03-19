@@ -15,6 +15,8 @@ static class Script {
   // Constants
   ///////////////////////
 
+  const int TAP_DURATION = 100;
+
   const int GAP_SIZE = 20;
 
   const int BORDER_SIZE = 8;
@@ -22,14 +24,8 @@ static class Script {
   static readonly Color BORDER_COLOR = new Color(95, 135, 0);
   static readonly HashSet<string> BORDER_IGNORE_TITLES = new HashSet<string> {
     "Cortana",
+    "Search",
   };
-
-  const int TAP_DURATION = 100;
-
-  const M MOD_PUSH = M.Win | M.Shift;
-  const M MOD_FOCUS = M.Win;
-  const M MOD_SWITCH = M.Win;
-  const M MOD_VI = M.Ctrl | M.Alt;
 
   // Structs
   ///////////////////////
@@ -71,11 +67,13 @@ static class Script {
         CapsControl();
         ViKeys();
         Terminal();
+        Launcher();
         break;
       }
       case Mode.Game: {
         ModeSwitcher();
         VirtualDesktop();
+        Launcher();
         break;
       }
     }
@@ -92,59 +90,62 @@ static class Script {
   }
 
   static void VirtualDesktop() {
-    Map(MOD_SWITCH, K.N1, () => Desktop.GoTo(0));
-    Map(MOD_SWITCH, K.N2, () => Desktop.GoTo(1));
-    Map(MOD_SWITCH, K.N3, () => Desktop.GoTo(2));
-    Map(MOD_SWITCH, K.N4, () => Desktop.GoTo(3));
-    Map(MOD_SWITCH, K.N5, () => Desktop.GoTo(4));
-    Map(MOD_SWITCH, K.N6, () => Desktop.GoTo(5));
-    Map(MOD_SWITCH, K.N7, () => Desktop.GoTo(6));
-    Map(MOD_SWITCH, K.N8, () => Desktop.GoTo(7));
-    Map(MOD_SWITCH, K.N9, () => Desktop.GoTo(8));
+    var mod = M.Win;
+    Map(mod, K.N1, () => Desktop.GoTo(0));
+    Map(mod, K.N2, () => Desktop.GoTo(1));
+    Map(mod, K.N3, () => Desktop.GoTo(2));
+    Map(mod, K.N4, () => Desktop.GoTo(3));
+    Map(mod, K.N5, () => Desktop.GoTo(4));
+    Map(mod, K.N6, () => Desktop.GoTo(5));
+    Map(mod, K.N7, () => Desktop.GoTo(6));
+    Map(mod, K.N8, () => Desktop.GoTo(7));
+    Map(mod, K.N9, () => Desktop.GoTo(8));
   }
 
   static void WindowArrangement() {
+    var mod = M.Win | M.Shift;
     var g = GAP_SIZE;
     var hg = GAP_SIZE / 2;
     var ghg = GAP_SIZE + hg;
-    Map(MOD_PUSH, K.Y, (a, w, h) => W.Move(a, 0,         0,         w,       h     ));
-    Map(MOD_PUSH, K.U, (a, w, h) => W.Move(a, g,         g,         w-2*g,   h-2*g ));
-    Map(MOD_PUSH, K.I, (a, w, h) => W.Move(a, (w-a.w)/2, (h-a.h)/2, null,    null  ));
-    Map(MOD_PUSH, K.H, (a, w, h) => W.Move(a, g,         null,      w/2-ghg, null  ));
-    Map(MOD_PUSH, K.L, (a, w, h) => W.Move(a, w/2+hg,    null,      w/2-ghg, null  ));
-    Map(MOD_PUSH, K.K, (a, w, h) => W.Move(a, null,      g,         null,    h/2-ghg));
-    Map(MOD_PUSH, K.J, (a, w, h) => W.Move(a, null,      h/2+hg,    null,    h/2-ghg));
+    Map(mod, K.Y, (a, w, h) => W.Move(a, 0,         0,         w,       h     ));
+    Map(mod, K.U, (a, w, h) => W.Move(a, g,         g,         w-2*g,   h-2*g ));
+    Map(mod, K.I, (a, w, h) => W.Move(a, (w-a.w)/2, (h-a.h)/2, null,    null  ));
+    Map(mod, K.H, (a, w, h) => W.Move(a, g,         null,      w/2-ghg, null  ));
+    Map(mod, K.L, (a, w, h) => W.Move(a, w/2+hg,    null,      w/2-ghg, null  ));
+    Map(mod, K.K, (a, w, h) => W.Move(a, null,      g,         null,    h/2-ghg));
+    Map(mod, K.J, (a, w, h) => W.Move(a, null,      h/2+hg,    null,    h/2-ghg));
   }
 
   static void WindowFocus() {
-    Map(MOD_FOCUS, K.OEM1, a => W.SetActive(W.All()
+    var mod = M.Win;
+    Map(mod, K.OEM1, a => W.SetActive(W.All()
       .Where(w => w.isVisible)
       .Where(w => w != a)
       .Where(w => w.x == a.x && w.y == a.y)
       .DefaultIfEmpty(a)
       .Last()));
-    Map(MOD_FOCUS, K.H, a => W.SetActive(W.All()
+    Map(mod, K.H, a => W.SetActive(W.All()
       .Where(w => w.isVisible)
       .Where(w => w.x < a.x)
       .OrderBy(w => Math.Abs(a.y - w.y))
       .ThenBy(w => Math.Abs(a.x - w.x))
       .DefaultIfEmpty(a)
       .First()));
-    Map(MOD_FOCUS, K.L, a => W.SetActive(W.All()
+    Map(mod, K.L, a => W.SetActive(W.All()
       .Where(w => w.isVisible)
       .Where(w => w.x > a.x)
       .OrderBy(w => Math.Abs(a.y - w.y))
       .ThenBy(w => Math.Abs(a.x - w.x))
       .DefaultIfEmpty(a)
       .First()));
-    Map(MOD_FOCUS, K.K, a => W.SetActive(W.All()
+    Map(mod, K.K, a => W.SetActive(W.All()
       .Where(w => w.isVisible)
       .Where(w => w.y < a.y)
       .OrderBy(w => Math.Abs(a.y - w.y))
       .ThenBy(w => Math.Abs(a.x - w.x))
       .DefaultIfEmpty(a)
       .First()));
-    Map(MOD_FOCUS, K.J, a => W.SetActive(W.All()
+    Map(mod, K.J, a => W.SetActive(W.All()
       .Where(w => w.isVisible)
       .Where(w => w.y > a.y)
       .OrderBy(w => Math.Abs(a.y - w.y))
@@ -169,14 +170,14 @@ static class Script {
     MapTap(
       TAP_DURATION,
       K.LeftShift,
-      new[] { K.LeftShift },
-      new[] { K.LeftShift, K.N9 }
+      new[] { K.Shift },
+      new[] { K.Shift, K.N9 }
     );
     MapTap(
       TAP_DURATION,
       K.RightShift,
-      new[] { K.RightShift },
-      new[] { K.RightShift, K.N0 }
+      new[] { K.Shift },
+      new[] { K.Shift, K.N0 }
     );
   }
 
@@ -184,7 +185,7 @@ static class Script {
     MapTapDelayHold(
       TAP_DURATION,
       K.Tab,
-      new[] { K.RightMenu },
+      new[] { K.Menu },
       new[] { K.Tab }
     );
   }
@@ -193,23 +194,28 @@ static class Script {
     MapTap(
       TAP_DURATION,
       K.CapsLock,
-      new[] { K.LeftControl },
+      new[] { K.Control },
       new[] { K.Escape }
     );
   }
 
   static void ViKeys() {
+    var mod = M.Ctrl | M.Alt;
     Action<K> Arrow = k => Send(new[] { (k, true), (k, false) });
-    H.MapDown(MOD_VI, K.H,    true, () => Arrow(K.Left));
-    H.MapDown(MOD_VI, K.J,    true, () => Arrow(K.Down));
-    H.MapDown(MOD_VI, K.K,    true, () => Arrow(K.Up));
-    H.MapDown(MOD_VI, K.L,    true, () => Arrow(K.Right));
-    H.MapDown(MOD_VI, K.Up,   true, () => Arrow(K.Prior));
-    H.MapDown(MOD_VI, K.Down, true, () => Arrow(K.Next));
+    H.MapDown(mod, K.H,    true, () => Arrow(K.Left));
+    H.MapDown(mod, K.J,    true, () => Arrow(K.Down));
+    H.MapDown(mod, K.K,    true, () => Arrow(K.Up));
+    H.MapDown(mod, K.L,    true, () => Arrow(K.Right));
+    H.MapDown(mod, K.Up,   true, () => Arrow(K.Prior));
+    H.MapDown(mod, K.Down, true, () => Arrow(K.Next));
   }
 
   static void Terminal() {
-    Map(M.Win, K.T, () => Execute.ShellRun(@"c:\tools\alacritty\terminal.lnk"));
+   Map(M.Win, K.T, () => Execute.RunProc(@"C:\tools\Alacritty\alacritty.exe", "-e wsl"));
+  }
+
+  static void Launcher() {
+    Map(M.Win, K.Space, () => Execute.RunShell(@"C:\tools\Keypirinha\keypirinha.exe", "--show"));
   }
 
   // Helper methods

@@ -6,18 +6,26 @@ namespace WinCtl {
 
 static class EventLoop {
 
+  // Constants
+  ///////////////////////
+
+  const string CLASS_NAME = "WinCtlMessageWindow";
+
   // DLL imports
   ///////////////////////
 
   const int WM_USER = 0x0400;
 
-  const int ERROR_CLASS_ALREADY_EXISTS = 1410;
+  static IntPtr HWND_MESSAGE = new IntPtr(-3);
 
   private delegate IntPtr WindowProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
 
   [StructLayout(LayoutKind.Sequential)]
-  private struct WNDCLASS {
-    public uint style;
+  private struct WndClassEx {
+    [MarshalAs(UnmanagedType.U4)]
+    public int cbSize;
+    [MarshalAs(UnmanagedType.U4)]
+    public int style;
     public WindowProc lpfnWndProc;
     public int cbClsExtra;
     public int cbWndExtra;
@@ -27,15 +35,22 @@ static class EventLoop {
     public IntPtr hbrBackground;
     public string lpszMenuName;
     public string lpszClassName;
+    public IntPtr hIconSm;
+
+    public static WndClassEx New() {
+      return new WndClassEx {
+        cbSize = Marshal.SizeOf(typeof (WndClassEx)),
+      };
+    }
   }
 
   [DllImport("user32.dll", SetLastError = true)]
-  static extern ushort RegisterClassW(ref WNDCLASS lpWndClass);
+  static extern IntPtr RegisterClassExW(ref WndClassEx lpWndClass);
 
   [DllImport("user32.dll", SetLastError = true)]
   static extern IntPtr CreateWindowExW(
     UInt32 dwExStyle,
-    string lpClassName,
+    IntPtr lpClassName,
     string lpWindowName,
     UInt32 dwStyle,
     Int32 x,
@@ -56,6 +71,9 @@ static class EventLoop {
 
   [DllImport("user32.dll")]
   static extern bool PostMessage(IntPtr hWnd, int Msg, IntPtr wParam, IntPtr lParam);
+
+  [DllImport("kernel32.dll")]
+  public static extern IntPtr GetModuleHandle(IntPtr lpModuleName);
 
   // Structs
   ///////////////////////
@@ -80,30 +98,37 @@ static class EventLoop {
   public static void Start() {
     if (thread != null) return;
     thread = Thread.Run("event loop", () => {
+      var moduleHandle = GetModuleHandle(IntPtr.Zero);
       wndProcDelegate = OnWndProc;
-      var wndClass = new WNDCLASS {
-        lpszClassName = "MessageWindow",
-        lpfnWndProc = wndProcDelegate,
-      };
-      var classAtom = RegisterClassW(ref wndClass);
-      int lastError = Marshal.GetLastWin32Error();
-      if (classAtom == 0 && lastError != ERROR_CLASS_ALREADY_EXISTS) {
-        throw new Exception("Could not register window class");
+      var wndClass = WndClassEx.New();
+      wndClass.lpszClassName = CLASS_NAME;
+      wndClass.lpfnWndProc = wndProcDelegate;
+      wndClass.hInstance = moduleHandle;
+      var classAtom = RegisterClassExW(ref wndClass);
+      if (classAtom == IntPtr.Zero) {
+        var lastError = Marshal.GetLastWin32Error();
+        Log.Error($"Could not register window class (code {lastError})");
+        return;
       }
       handle = CreateWindowExW(
         0,
-        wndClass.lpszClassName,
+        classAtom,
         String.Empty,
         0,
         0,
         0,
         0,
         0,
+        HWND_MESSAGE,
         IntPtr.Zero,
-        IntPtr.Zero,
-        IntPtr.Zero,
+        moduleHandle,
         IntPtr.Zero
       );
+      if (handle == IntPtr.Zero) {
+        var lastError = Marshal.GetLastWin32Error();
+        Log.Error($"Could create window with class {classAtom} (code {lastError})");
+        return;
+      }
       System.Windows.Forms.Application.Run();
     });
   }
