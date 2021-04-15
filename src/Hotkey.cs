@@ -133,6 +133,7 @@ public static class Hotkey {
   }
 
   static bool OnUp(Key key) {
+    CtrlAltDeleteModReset(key);
     if (ALT_KEYS.Contains(key))   heldMods &= ~Mod.Alt;
     if (CTRL_KEYS.Contains(key))  heldMods &= ~Mod.Ctrl;
     if (SHIFT_KEYS.Contains(key)) heldMods &= ~Mod.Shift;
@@ -155,6 +156,13 @@ public static class Hotkey {
     if (!handlers.ContainsKey(mod))      return (default, false);
     if (!handlers[mod].ContainsKey(key)) return (default, false);
     return (handlers[mod][key], true);
+  }
+
+  static void CtrlAltDeleteModReset(Key key) {
+    // Ctrl+Alt+Delete doesn't send UP events for modifiers so reset manually
+    if (key != Key.Delete) return;
+    if (heldMods != (Mod.Ctrl | Mod.Alt)) return;
+    heldMods = Mod.None;
   }
 
 }
