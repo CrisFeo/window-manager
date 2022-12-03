@@ -28,6 +28,7 @@ public static class Window {
 
   enum ShowStyle {
     NORMAL_NO_ACTIVATE = 4,
+    SHOW = 5,
     MINIMIZED_NO_ACTIVATE = 7,
   }
 
@@ -113,6 +114,12 @@ public static class Window {
   [DllImport("user32.dll")]
   static extern IntPtr GetForegroundWindow();
 
+  [DllImport("kernel32.dll")]
+  public static extern int GetCurrentThreadId();
+
+  [DllImport("user32.dll")]
+  public static extern bool AttachThreadInput(int threadIdFrom, int threadIdTo, bool attach);
+
   [DllImport("user32.dll")]
   static extern bool SetForegroundWindow(IntPtr wnd);
 
@@ -145,6 +152,9 @@ public static class Window {
 
   [DllImport("user32.dll")]
   static extern bool ShowWindow(IntPtr wnd, ShowStyle style);
+
+  [DllImport("user32.dll")]
+  static extern bool BringWindowToTop(IntPtr wnd);
 
   [DllImport("user32.dll", SetLastError=true)]
   static extern bool SetWindowPos(IntPtr wnd, IntPtr afterWnd, int x, int y, int w, int h, SetWindowPosFlags flags);
@@ -202,7 +212,17 @@ public static class Window {
   }
 
   public static bool SetActive(Info info) {
-    return SetForegroundWindow(info.handle);
+    var foregroundWindow = GetForegroundWindow();
+    var foregroundThreadId = GetWindowThreadProcessId(foregroundWindow, out var _);
+    var currentThreadId = GetCurrentThreadId();
+    if (currentThreadId != foregroundThreadId) {
+      AttachThreadInput(currentThreadId, foregroundThreadId, true);
+      var result = BringWindowToTop(info.handle) && ShowWindow(info.handle, ShowStyle.SHOW);
+      AttachThreadInput(currentThreadId, foregroundThreadId, false);
+      return result;
+    } else {
+      return BringWindowToTop(info.handle) && ShowWindow(info.handle, ShowStyle.SHOW);
+    }
   }
 
   public static bool Minimize(Info info) {

@@ -55,7 +55,8 @@ public static class Desktop {
   static (int, int) Fetch() {
     var sessionId = Process.GetCurrentProcess().SessionId;
     var current = (byte[])Registry.GetValue(
-      $"{EXPLORER_PATH}\\SessionInfo\\{sessionId}\\VirtualDesktops",
+      //$"{EXPLORER_PATH}\\SessionInfo\\{sessionId}\\VirtualDesktops",
+      $"{EXPLORER_PATH}\\VirtualDesktops",
       "CurrentVirtualDesktop",
       new byte[]{}
     );

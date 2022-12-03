@@ -62,18 +62,19 @@ static class Script {
         WindowArrangement();
         WindowFocus();
         WindowBorder();
-        ShiftParentheses();
-        TabAlt();
-        CapsControl();
-        ViKeys();
+        //ShiftParentheses();
+        //TabAlt();
+        //CapsControl();
+        //viKeys();
         Terminal();
-        Launcher();
+        Clipboard();
+        //Launcher();
         break;
       }
       case Mode.Game: {
         ModeSwitcher();
         VirtualDesktop();
-        Launcher();
+        //Launcher();
         break;
       }
     }
@@ -119,34 +120,34 @@ static class Script {
   static void WindowFocus() {
     var mod = M.Win;
     Map(mod, K.OEM1, a => W.SetActive(W.All()
-      .Where(w => w.isVisible)
+      .Where(w => w.isVisible && w != a)
       .Where(w => w != a)
       .Where(w => w.x == a.x && w.y == a.y)
       .DefaultIfEmpty(a)
       .Last()));
     Map(mod, K.H, a => W.SetActive(W.All()
-      .Where(w => w.isVisible)
+      .Where(w => w.isVisible && w != a)
       .Where(w => w.x < a.x)
       .OrderBy(w => Math.Abs(a.y - w.y))
       .ThenBy(w => Math.Abs(a.x - w.x))
       .DefaultIfEmpty(a)
       .First()));
     Map(mod, K.L, a => W.SetActive(W.All()
-      .Where(w => w.isVisible)
+      .Where(w => w.isVisible && w != a)
       .Where(w => w.x > a.x)
       .OrderBy(w => Math.Abs(a.y - w.y))
       .ThenBy(w => Math.Abs(a.x - w.x))
       .DefaultIfEmpty(a)
       .First()));
     Map(mod, K.K, a => W.SetActive(W.All()
-      .Where(w => w.isVisible)
+      .Where(w => w.isVisible && w != a)
       .Where(w => w.y < a.y)
       .OrderBy(w => Math.Abs(a.y - w.y))
       .ThenBy(w => Math.Abs(a.x - w.x))
       .DefaultIfEmpty(a)
       .First()));
     Map(mod, K.J, a => W.SetActive(W.All()
-      .Where(w => w.isVisible)
+      .Where(w => w.isVisible && w != a)
       .Where(w => w.y > a.y)
       .OrderBy(w => Math.Abs(a.y - w.y))
       .ThenBy(w => Math.Abs(a.x - w.x))
@@ -211,7 +212,17 @@ static class Script {
   }
 
   static void Terminal() {
-   Map(M.Win, K.T, () => Execute.RunProc(@"C:\tools\Alacritty\alacritty.exe", "-e wsl"));
+    Map(M.Win, K.T, () => Execute.RunProc(@"C:\tools\Alacritty\alacritty.exe", "-e wsl"));
+  }
+
+  static void Clipboard() {
+    Map(M.Win, K.C, () => ShRun(
+      " set -Eeu               ",
+      " tmp=\"$(mktemp)\"      ",
+      " ~/.bin/clip > \"$tmp\" ",
+      " ~/.bin/ks \"$tmp\"     ",
+      " ~/.bin/clip < \"$tmp\" "
+    ));
   }
 
   static void Launcher() {
@@ -311,6 +322,16 @@ static class Script {
 
   static void SendRaw(IEnumerable<(K, bool)> keystrokes) {
     Input.SendRaw(new LinkedList<(K, bool)>(keystrokes));
+  }
+
+  static void ShRun(params string[] lines) {
+    var cmd = string.Join("\n", lines).Replace("'", @"\'");
+    Execute.RunProc(@"C:\tools\Alacritty\alacritty.exe", $"-e wsl sh -i -c '{cmd}'");
+  }
+
+  static void ShDebug(params string[] lines) {
+    var cmd = string.Join("\n", lines).Replace("'", @"\'");
+    Execute.RunProc(@"C:\tools\Alacritty\alacritty.exe", $"--hold -e wsl sh -i -c '{cmd}'");
   }
 
 }
