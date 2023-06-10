@@ -21,6 +21,9 @@ class AssemblyGenerator {
   public AssemblyGenerator() {
     ReferenceAssemblyByName("System.Runtime");
     ReferenceAssemblyByName("System.Private.CoreLib");
+    ReferenceAssemblyByName("System.Private.Uri");
+    ReferenceAssemblyByName("System.Net.Http");
+    ReferenceAssemblyByName("System.Text.Json");
   }
 
   // Public methods

@@ -1,5 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
 using System.Linq;
 using WinCtl;
 
@@ -26,6 +30,8 @@ static class Script {
     "Cortana",
     "Search",
   };
+
+  static readonly HttpClient HTTP_CLIENT = new HttpClient();
 
   // Structs
   ///////////////////////
@@ -67,7 +73,7 @@ static class Script {
         //CapsControl();
         //viKeys();
         Terminal();
-        Clipboard();
+        //Clipboard();
         //Launcher();
         break;
       }
@@ -212,7 +218,21 @@ static class Script {
   }
 
   static void Terminal() {
-    Map(M.Win, K.T, () => Execute.RunProc(@"C:\tools\Alacritty\alacritty.exe", "-e wsl"));
+    Map(M.Win, K.T, async () => {
+      var body = new Dictionary<string, object>() {
+        ["name"] =  "devenv",
+        ["directory"] =  "/root",
+      };
+      var content = new StringContent(
+        JsonSerializer.Serialize(body),
+        Encoding.UTF8,
+        "application/json"
+      );
+      await HTTP_CLIENT.PostAsync(
+        "http://localhost:57689/new-window",
+        content
+      );
+    });
   }
 
   static void Clipboard() {
@@ -234,6 +254,10 @@ static class Script {
 
   static void Map(M mod, K key, Action fn) {
     H.MapDown(mod, key, false, fn);
+  }
+
+  static void Map(M mod, K key, Func<Task> fn) {
+    H.MapDown(mod, key, false, () => Task.Run(fn));
   }
 
   static void Map(M mod, K key, Action<W.Info> fn) {
