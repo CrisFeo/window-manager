@@ -100,49 +100,38 @@ fn create_window_handle() -> Result<HWND> {
   Ok(handle)
 }
 
-fn draw_active_border(settings: Settings, handle: HWND) -> Result<()> {
+fn draw_active_border(hdc: HDC, settings: Settings, handle: HWND) -> Result<()> {
   let active = Window::active()?;
   let window = Window::from_handle(handle)?;
   let (screen_w, screen_h) = window.resolution()?;
-  unsafe {
-    let mut paint_struct = mem::zeroed();
-    let hdc = BeginPaint(handle, &mut paint_struct);
-    let pen = CreatePen(PS_NULL, 0, 0);
-    let transparent_brush = CreateSolidBrush(0x0000FFFF);
-    let border_brush = CreateSolidBrush(settings.border_color.0);
-    let old_pen = SelectObject(hdc, pen);
-    let old_brush = SelectObject(hdc, transparent_brush);
-    Rectangle(hdc, 0, 0, screen_w, screen_h);
-    if let Some(a) = active {
-      let x = a.rect.x;
-      let y = a.rect.y;
-      let w = {
-        let mut w = a.rect.w;
-        if x == 0 && w == screen_w {
-          w += 1;
-        }
-        w
-      };
-      let h = {
-        let mut h = a.rect.h;
-        if y == 0 && h == screen_h {
-          h += 1;
-        }
-        h
-      };
-      let b = settings.border_size;
-      let r = settings.border_radius;
-      SelectObject(hdc, border_brush);
+  unsafe { Rectangle(hdc, 0, 0, screen_w, screen_h) };
+  if let Some(a) = active {
+    let x = a.rect.x;
+    let y = a.rect.y;
+    let w = {
+      let mut w = a.rect.w;
+      if x == 0 && w == screen_w {
+        w += 1;
+      }
+      w
+    };
+    let h = {
+      let mut h = a.rect.h;
+      if y == 0 && h == screen_h {
+        h += 1;
+      }
+      h
+    };
+    let b = settings.border_size;
+    let r = settings.border_radius;
+    unsafe {
+      let border_brush = CreateSolidBrush(settings.border_color.0);
+      let old_brush = SelectObject(hdc, border_brush);
       RoundRect(hdc, x - b, y - b, x + w + b, y + h + b, r, r);
-      SelectObject(hdc, transparent_brush);
+      SelectObject(hdc, old_brush);
+      DeleteObject(border_brush);
       RoundRect(hdc, x, y, x + w, y + h, r, r);
     }
-    SelectObject(hdc, old_pen);
-    SelectObject(hdc, old_brush);
-    DeleteObject(pen);
-    DeleteObject(transparent_brush);
-    DeleteObject(border_brush);
-    EndPaint(handle, &paint_struct);
   }
   Ok(())
 }
@@ -150,13 +139,24 @@ fn draw_active_border(settings: Settings, handle: HWND) -> Result<()> {
 unsafe extern "system" fn window_proc(hwnd: HWND, u_msg: u32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
   match u_msg {
     WM_PAINT => {
+      let mut paint_struct = mem::zeroed();
+      let hdc = BeginPaint(hwnd, &mut paint_struct);
+      let pen = CreatePen(PS_NULL, 0, 0);
+      let old_pen = SelectObject(hdc, pen);
+      let brush = CreateSolidBrush(0x0000FFFF);
+      let old_brush = SelectObject(hdc, brush);
       let settings = get_context().as_ref().map(|c| c.settings);
       if let Some(settings) = settings {
-        let result = draw_active_border(settings, hwnd);
+        let result = draw_active_border(hdc, settings, hwnd);
         if let Err(error) = result {
           println!("failed to draw active window border {error}");
         }
       }
+      SelectObject(hdc, old_brush);
+      DeleteObject(brush);
+      SelectObject(hdc, old_pen);
+      DeleteObject(pen);
+      EndPaint(hwnd, &paint_struct);
       0
     },
     _ => DefWindowProcW(hwnd, u_msg, w_param, l_param),
