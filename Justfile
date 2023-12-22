@@ -11,10 +11,9 @@ setup:
 build:
   cargo build {{cargo_args}}
 
-run:
+deploy:
   just build
   cp ./target/x86_64-pc-windows-gnu/debug/{{project_name}}.exe /c/temp/
-  /c/temp/{{project_name}}.exe
 
 check:
   cargo clippy {{cargo_args}}
