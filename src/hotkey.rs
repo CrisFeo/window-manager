@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::collections::HashSet;
 use std::thread::{JoinHandle, spawn};
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Mutex, OnceLock};
 use std::sync::mpsc::{Sender, channel};
 use anyhow::Result;
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
@@ -19,7 +19,7 @@ struct Context {
   action_sender: Sender<HotkeyAction>,
 }
 
-static CONTEXT: Mutex<Option<Context>> = Mutex::new(None);
+static CONTEXT: OnceLock<Mutex<Context>> = OnceLock::new();
 
 pub fn setup(key_event_handler: KeyEventHandler) -> Result<JoinHandle<()>> {
   let (tx, rx) = channel();
@@ -28,7 +28,7 @@ pub fn setup(key_event_handler: KeyEventHandler) -> Result<JoinHandle<()>> {
     held_keys: HashSet::new(),
     action_sender: tx,
   };
-  *CONTEXT.lock().expect("shouldn't fail to retrieve context during setup") = Some(context);
+  let _ = CONTEXT.set(Mutex::new(context));
   win_err!(SetWindowsHookExW(WH_KEYBOARD_LL, Some(key_hook), 0, 0))?;
   Ok(spawn(move || {
     let result = unsafe { SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) };
@@ -49,19 +49,14 @@ pub fn setup(key_event_handler: KeyEventHandler) -> Result<JoinHandle<()>> {
   }))
 }
 
-fn get_context() -> MutexGuard<'static, Option<Context>> {
-  match CONTEXT.lock() {
-    Ok(context) => context,
-    Err(_) => panic!("could not obtain context from mutex"),
-  }
-}
-
 unsafe extern "system" fn key_hook(code: i32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
+  let start = std::time::Instant::now();
+  let mut handled = false;
   let msg_type = w_param as u32;
   let info = l_param as *mut KBDLLHOOKSTRUCT;
   if code >= 0 && (*info).flags & LLKHF_INJECTED == 0 {
-    let mut context = get_context();
-    if let Some(context) = context.as_mut() {
+    let mut context = CONTEXT.get().unwrap().try_lock();
+    if let Ok(ref mut context) = context {
       let is_up = msg_type == WM_KEYUP || msg_type == WM_SYSKEYUP;
       let key = Key::from_scan_code((*info).scanCode);
       let modified = if is_up {
@@ -77,10 +72,14 @@ unsafe extern "system" fn key_hook(code: i32, w_param: WPARAM, l_param: LPARAM) 
           if let Err(error) = result {
             println!("ERROR failed to send action to channel: {error}");
           }
-          return 1;
+          handled = true;
         }
       }
     }
   }
-  CallNextHookEx(0, code, w_param, l_param)
+  println!("HOOK: {}", start.elapsed().as_millis());
+  match handled {
+    true => 1,
+    false => CallNextHookEx(0, code, w_param, l_param),
+  }
 }

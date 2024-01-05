@@ -1,6 +1,6 @@
 use std::mem;
 use std::ptr;
-use std::sync::{Mutex, MutexGuard};
+use std::sync::OnceLock;
 use anyhow::{anyhow, Result};
 use windows_sys::*;
 use windows_sys::Win32::{
@@ -28,7 +28,7 @@ struct Context {
   settings: Settings,
 }
 
-static CONTEXT: Mutex<Option<Context>> = Mutex::new(None);
+static CONTEXT: OnceLock<Context> = OnceLock::new();
 
 pub fn setup(settings: Settings) -> Result<()> {
   let handle = create_window_handle()?;
@@ -36,24 +36,21 @@ pub fn setup(settings: Settings) -> Result<()> {
     handle,
     settings,
   };
-  *CONTEXT.lock().expect("shouldn't fail to retrieve context during setup") = Some(context);
+  let _ = CONTEXT.set(context);
   set_event_hook(EVENT_SYSTEM_FOREGROUND, Some(event_hook))?;
   set_event_hook(EVENT_OBJECT_LOCATIONCHANGE, Some(event_hook))?;
   Ok(())
 }
 
 pub fn force_redraw() {
-  let window = get_context().as_ref().map(|c| Window::from_handle(c.handle));
-  if let Some(Ok(window)) = window {
+  let window = Window::from_handle(get_context().handle);
+  if let Ok(window) = window {
     window.redraw();
   }
 }
 
-fn get_context() -> MutexGuard<'static, Option<Context>> {
-  match CONTEXT.lock() {
-    Ok(context) => context,
-    Err(_) => panic!("could not obtain context from mutex"),
-  }
+fn get_context() -> &'static Context {
+  CONTEXT.get().unwrap()
 }
 
 fn create_window_handle() -> Result<HWND> {
@@ -108,29 +105,20 @@ fn draw_active_border(hdc: HDC, settings: Settings, handle: HWND) -> Result<()> 
   if let Some(a) = active {
     let x = a.rect.x;
     let y = a.rect.y;
-    let w = {
-      let mut w = a.rect.w;
-      if x == 0 && w == screen_w {
-        w += 1;
-      }
-      w
-    };
-    let h = {
-      let mut h = a.rect.h;
-      if y == 0 && h == screen_h {
-        h += 1;
-      }
-      h
-    };
+    let w = a.rect.w;
+    let h = a.rect.h;
     let b = settings.border_size;
     let r = settings.border_radius;
-    unsafe {
-      let border_brush = CreateSolidBrush(settings.border_color.0);
-      let old_brush = SelectObject(hdc, border_brush);
-      RoundRect(hdc, x - b, y - b, x + w + b, y + h + b, r, r);
-      SelectObject(hdc, old_brush);
-      DeleteObject(border_brush);
-      RoundRect(hdc, x, y, x + w, y + h, r, r);
+    let is_fullscreen = x == 0 && w == screen_w && y == 0 && h == screen_h;
+    if !is_fullscreen {
+      unsafe {
+        let border_brush = CreateSolidBrush(settings.border_color.0);
+        let old_brush = SelectObject(hdc, border_brush);
+        RoundRect(hdc, x - b, y - b, x + w + b, y + h + b, r, r);
+        SelectObject(hdc, old_brush);
+        DeleteObject(border_brush);
+        RoundRect(hdc, x, y, x + w, y + h, r, r);
+      }
     }
   }
   Ok(())
@@ -139,23 +127,32 @@ fn draw_active_border(hdc: HDC, settings: Settings, handle: HWND) -> Result<()> 
 unsafe extern "system" fn window_proc(hwnd: HWND, u_msg: u32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
   match u_msg {
     WM_PAINT => {
+      let mut client_rect = mem::zeroed();
+      GetClientRect(hwnd, &mut client_rect);
+      let client_w = client_rect.right - client_rect.left;
+      let client_h = client_rect.bottom - client_rect.top;
       let mut paint_struct = mem::zeroed();
       let hdc = BeginPaint(hwnd, &mut paint_struct);
+      let hdc_mem = CreateCompatibleDC(hdc);
+      let hbm_mem = CreateCompatibleBitmap(hdc, client_w, client_h);
+      let hbm_old = SelectObject(hdc_mem, hbm_mem);
       let pen = CreatePen(PS_NULL, 0, 0);
-      let old_pen = SelectObject(hdc, pen);
+      let old_pen = SelectObject(hdc_mem, pen);
       let brush = CreateSolidBrush(0x0000FFFF);
-      let old_brush = SelectObject(hdc, brush);
-      let settings = get_context().as_ref().map(|c| c.settings);
-      if let Some(settings) = settings {
-        let result = draw_active_border(hdc, settings, hwnd);
-        if let Err(error) = result {
-          println!("failed to draw active window border {error}");
-        }
+      let old_brush = SelectObject(hdc_mem, brush);
+      let settings = get_context().settings;
+      let result = draw_active_border(hdc_mem, settings, hwnd);
+      if let Err(error) = result {
+        println!("failed to draw active window border {error}");
       }
-      SelectObject(hdc, old_brush);
+      BitBlt(hdc, 0, 0, client_w, client_h, hdc_mem, 0, 0, SRCCOPY);
+      SelectObject(hdc_mem, old_brush);
       DeleteObject(brush);
-      SelectObject(hdc, old_pen);
+      SelectObject(hdc_mem, old_pen);
       DeleteObject(pen);
+      SelectObject(hdc_mem, hbm_old);
+      DeleteObject(hbm_mem);
+      DeleteDC(hdc_mem);
       EndPaint(hwnd, &paint_struct);
       0
     },
@@ -185,8 +182,8 @@ unsafe extern "system" fn event_hook(
   _ideventthread: u32,
   _dwmseventtime: u32,
 ) {
-  let window = get_context().as_ref().map(|c| Window::from_handle(c.handle));
-  if let Some(Ok(window)) = window {
+  let window = Window::from_handle(get_context().handle);
+  if let Ok(window) = window {
     if let Ok(Some(active)) = Window::active() {
       if active.handle == hwnd {
         window.redraw();
