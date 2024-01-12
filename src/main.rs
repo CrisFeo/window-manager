@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::process::Command;
 use anyhow::Result;
 use window_manager::keys::Key;
 use window_manager::colors::Color;
@@ -93,20 +94,9 @@ fn print_windows() -> Result<()> {
 }
 
 fn terminal() -> Result<()> {
-  #[derive(serde::Serialize)]
-  struct Request<'a> {
-    name: String,
-    command: &'a str,
-  }
-  let distro = std::fs::read_to_string("C:\\projects\\devenv-wsl\\distro")?;
-  let api = std::fs::read_to_string("C:\\projects\\devenv-wsl\\api")?;
-  let route = format!("{api}/new-window");
-  let body = Request {
-    name: distro,
-    command: "cd /root && /bin/bash",
-  };
-  let client = reqwest::blocking::Client::new();
-  client.post(route).json(&body).send()?;
+  Command::new("C:\\tools\\alacritty\\alacritty.exe")
+    .args(["--config-file", "alacritty.toml"])
+    .spawn()?;
   Ok(())
 }
 

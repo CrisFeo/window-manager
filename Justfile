@@ -5,7 +5,6 @@ list:
   just -l -u
 
 setup:
-  cargo install --locked just
   cargo install --locked bacon
 
 build:
@@ -13,10 +12,10 @@ build:
 
 deploy:
   just build
-  cp ./target/x86_64-pc-windows-gnu/debug/{{project_name}}.exe /c/temp/
+  cp ./target/x86_64-pc-windows-gnu/debug/{{project_name}}.exe /mnt/c/tools/window-manager
 
 check:
   cargo clippy {{cargo_args}}
 
-watch task='check':
+watch:
   bacon clippy -- {{cargo_args}}

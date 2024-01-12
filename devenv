@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+NAME=window-manager-devenv
+
+export LOCAL_WORKSPACE_FOLDER="${LOCAL_WORKSPACE_FOLDER:-$(pwd)}"
+
+if docker inspect -f '{{.State.Running}}' $NAME &> /dev/null; then
+  docker exec       \
+      --interactive \
+      --tty         \
+      $NAME         \
+      /bin/bash
+else
+  docker build . -t "$NAME:latest"
+  docker run                                                             \
+    --name $NAME                                                         \
+    --interactive                                                        \
+    --tty                                                                \
+    --rm                                                                 \
+    --volume '/mnt/c:/mnt/c'                                             \
+    --volume '//var/run/docker.sock://var/run/docker.sock'               \
+    --volume ${SSH_AUTH_SOCK}:/ssh-agent                                 \
+    --env SSH_AUTH_SOCK=/ssh-agent                                       \
+    --env LOCAL_WORKSPACE_FOLDER                                         \
+    --env LOCAL_WORKSPACE_FOLDER=$LOCAL_WORKSPACE_FOLDER                 \
+    --mount "type=bind,source=$LOCAL_WORKSPACE_FOLDER,target=/workspace" \
+    --workdir "/workspace"                                               \
+    "$NAME:latest"                                                       \
+    /bin/bash
+fi
