@@ -229,6 +229,10 @@ impl Window {
     Ok(true)
   }
 
+  pub fn set_maximized(&self) {
+    unsafe { ShowWindow(self.handle, SW_MAXIMIZE) };
+  }
+
   pub fn redraw(&self) {
     unsafe { RedrawWindow(self.handle, ptr::null(), 0, RDW_INVALIDATE) };
   }

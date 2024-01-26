@@ -94,8 +94,10 @@ fn print_windows() -> Result<()> {
 }
 
 fn terminal() -> Result<()> {
-  Command::new("C:\\tools\\alacritty\\alacritty.exe")
-    .args(["--config-file", "alacritty.toml"])
+  let term_cmd = "C:\\tools\\alacritty\\alacritty.exe --config-file alacritty.toml";
+  let script = format!("start {term_cmd}");
+  Command::new("C:\\windows\\system32\\cmd.exe")
+    .args([ "/c", &script ])
     .spawn()?;
   Ok(())
 }
@@ -195,14 +197,7 @@ fn push_fullscreen() -> Result<()> {
     Some(a) => a,
     _ => return Ok(()),
   };
-  let (w, h) = a.resolution()?;
-  let rect = Rect {
-    x: 0,
-    y: 0,
-    w,
-    h,
-  };
-  a.set_rect(rect)?;
+  a.set_maximized();
   Ok(())
 }
 
