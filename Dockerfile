@@ -10,6 +10,6 @@ RUN apk add --no-cache \
   build-base           \
  	mingw-w64-gcc
 RUN /usr/bin/rustup-init -y
+RUN $HOME/.cargo/bin/cargo install bacon
 RUN echo '. $HOME/.cargo/env' > $HOME/.bashrc
 RUN $HOME/.cargo/bin/rustup target add x86_64-pc-windows-gnu
-RUN 

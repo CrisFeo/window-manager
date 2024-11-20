@@ -43,10 +43,14 @@ pub fn setup(settings: Settings) -> Result<()> {
 }
 
 pub fn force_redraw() {
-  let window = Window::from_handle(get_context().handle);
-  if let Ok(window) = window {
-    window.redraw();
-  }
+  let Some(context) = CONTEXT.get() else {
+    return;
+  };
+  let window = Window::from_handle(context.handle);
+  let Ok(window) = window else {
+    return;
+  };
+  window.redraw();
 }
 
 fn get_context() -> &'static Context {
@@ -58,7 +62,7 @@ fn create_window_handle() -> Result<HWND> {
   if result == 0 {
     return Err(anyhow!("could not set action thread DPI awareness"));
   }
-  let instance = win_err!(GetModuleHandleW(ptr::null()))?;
+  let instance = win_err!(unsafe { GetModuleHandleW(ptr::null()) })?;
   let class_name = w!("ACTIVE_WINDOW_BORDER");
   let class = WNDCLASSW {
       style: 0,
@@ -72,14 +76,14 @@ fn create_window_handle() -> Result<HWND> {
       lpszMenuName: ptr::null(),
       lpszClassName: class_name,
   };
-  win_err!(RegisterClassW(&class))?;
+  win_err!(unsafe { RegisterClassW(&class) })?;
   let style = WS_EX_TOPMOST
     | WS_EX_COMPOSITED
     | WS_EX_TRANSPARENT
     | WS_EX_TOOLWINDOW
     | WS_EX_LAYERED
     | WS_EX_NOACTIVATE;
-  let handle = win_err!(CreateWindowExW(
+  let handle = win_err!(unsafe { CreateWindowExW(
     style,
     class_name,
     ptr::null(),
@@ -92,8 +96,8 @@ fn create_window_handle() -> Result<HWND> {
     0,
     instance,
     ptr::null(),
-  ))?;
-  win_err!(SetLayeredWindowAttributes(handle, 0x0000FFFF, 0, LWA_COLORKEY))?;
+  ) })?;
+  win_err!(unsafe { SetLayeredWindowAttributes(handle, 0x0000FFFF, 0, LWA_COLORKEY) })?;
   Ok(handle)
 }
 
@@ -105,8 +109,8 @@ fn draw_active_border(hdc: HDC, settings: Settings, handle: HWND) -> Result<()> 
   if let Some(a) = active {
     let x = a.rect.x;
     let y = a.rect.y;
-    let w = a.rect.w;
-    let h = a.rect.h;
+    let w = a.rect.w + 1;
+    let h = a.rect.h + 1;
     let b = settings.border_size;
     let r = settings.border_radius;
     let is_fullscreen = x == 0 && w == screen_w && y == 0 && h == screen_h;
@@ -161,7 +165,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, u_msg: u32, w_param: WPARAM, l
 }
 
 fn set_event_hook(event: u32, proc: WINEVENTPROC) -> Result<()> {
-  win_err!(SetWinEventHook(
+  win_err!(unsafe { SetWinEventHook(
     event,
     event,
     0,
@@ -169,7 +173,7 @@ fn set_event_hook(event: u32, proc: WINEVENTPROC) -> Result<()> {
     0,
     0,
     WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS,
-  ))?;
+  ) })?;
   Ok(())
 }
 

@@ -10,19 +10,23 @@ use window_manager::active_border;
 
 pub const GAP_SIZE: i32 = 20;
 pub const BORDER_SIZE: i32 = 8;
-pub const BORDER_RADIUS: i32 = 12;
+pub const BORDER_RADIUS: i32 = 17;
 pub const BORDER_COLOR: Color = Color::new(25, 120, 20);
 
 fn main() {
-  let active_window_settings = active_border::Settings{
-    border_color: BORDER_COLOR,
-    border_radius: BORDER_RADIUS,
-    border_size: BORDER_SIZE,
-  };
   window_manager::run(
-    active_window_settings,
+    active_border_settings(),
     Box::new(handle_key),
   );
+}
+
+fn active_border_settings() -> Option<active_border::Settings> {
+  //Some(active_border::Settings{
+    //border_color: BORDER_COLOR,
+    //border_radius: BORDER_RADIUS,
+    //border_size: BORDER_SIZE,
+  //})
+  None
 }
 
 macro_rules! map {
@@ -48,8 +52,8 @@ fn handle_key(key: Key, held: &HashSet<Key>) -> Option<hotkey::HotkeyAction> {
     map!(s, J,         [J, Win, Shf],    push(Down));
     map!(s, K,         [K, Win, Shf],    push(Up));
     map!(s, L,         [L, Win, Shf],    push(Right));
-    map!(s, Y,         [Y, Win, Shf],    push_fullscreen());
-    map!(s, U,         [U, Win, Shf],    push_maximize());
+    map!(s, Y,         [Y, Win, Shf],    push_maximize());
+    map!(s, U,         [U, Win, Shf],    push_big());
     map!(s, I,         [I, Win, Shf],    push_center());
     map!(s, Num(1),    [Num(1), Win],    desktop(0));
     map!(s, Num(2),    [Num(2), Win],    desktop(1));
@@ -94,7 +98,8 @@ fn print_windows() -> Result<()> {
 }
 
 fn terminal() -> Result<()> {
-  let term_cmd = "C:\\tools\\alacritty\\alacritty.exe --config-file alacritty.toml";
+  //let term_cmd = "C:\\tools\\alacritty\\alacritty.exe --config-file alacritty.yml";
+  let term_cmd = "%LocalAppData%\\Microsoft\\WindowsApps\\wt.exe --focus";
   let script = format!("start {term_cmd}");
   Command::new("C:\\windows\\system32\\cmd.exe")
     .args([ "/c", &script ])
@@ -158,46 +163,52 @@ fn push(direction: Direction) -> Result<()> {
     Some(a) => a,
     _ => return Ok(()),
   };
+  let was_maximized = a.get_maximized();
+  let a = a.ensure_not_maximized()?;
   let g = GAP_SIZE;
   let hg = GAP_SIZE / 2;
   let ghg = GAP_SIZE + hg;
   let (w, h) = a.resolution()?;
+  // when we push we only effect the axis being pushed along. In the case of a
+  // fullscreen window though we want to treat the axis not being pushed along
+  // as a gapped "maximized" window.
+  let existing_rect = if was_maximized {
+    Rect {
+      x: g,
+      y: g,
+      w: w - 2 * g,
+      h: h - 2 * g,
+    }
+  } else {
+    a.rect.clone()
+  };
   let rect = match direction {
     Direction::Left =>  Rect {
       x: g,
-      y: a.rect.y,
+      y: existing_rect.y,
       w: w / 2 - ghg,
-      h: a.rect.h
+      h: existing_rect.h
     },
     Direction::Right => Rect {
       x: w / 2 + hg,
-      y: a.rect.y,
+      y: existing_rect.y,
       w: w / 2 - ghg,
-      h: a.rect.h
+      h: existing_rect.h
     },
     Direction::Down =>  Rect {
-      x: a.rect.x,
+      x: existing_rect.x,
       y: h / 2 + hg,
-      w: a.rect.w,
+      w: existing_rect.w,
       h: h / 2 - ghg
     },
     Direction::Up =>    Rect {
-      x: a.rect.x,
+      x: existing_rect.x,
       y: g,
-      w: a.rect.w,
+      w: existing_rect.w,
       h: h / 2 - ghg
     },
   };
   a.set_rect(rect)?;
-  Ok(())
-}
-
-fn push_fullscreen() -> Result<()> {
-  let a = match Window::active()? {
-    Some(a) => a,
-    _ => return Ok(()),
-  };
-  a.set_maximized();
   Ok(())
 }
 
@@ -206,6 +217,16 @@ fn push_maximize() -> Result<()> {
     Some(a) => a,
     _ => return Ok(()),
   };
+  a.set_maximized();
+  Ok(())
+}
+
+fn push_big() -> Result<()> {
+  let a = match Window::active()? {
+    Some(a) => a,
+    _ => return Ok(()),
+  };
+  let a = a.ensure_not_maximized()?;
   let (w, h) = a.resolution()?;
   let rect = Rect {
     x: GAP_SIZE,
@@ -222,6 +243,7 @@ fn push_center() -> Result<()> {
     Some(a) => a,
     _ => return Ok(()),
   };
+  let a = a.ensure_not_maximized()?;
   let (w, h) = a.resolution()?;
   let rect = Rect {
     x: (w - a.rect.w) / 2,

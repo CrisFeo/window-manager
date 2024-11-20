@@ -29,7 +29,7 @@ pub fn setup(key_event_handler: KeyEventHandler) -> Result<JoinHandle<()>> {
     action_sender: tx,
   };
   let _ = CONTEXT.set(Mutex::new(context));
-  win_err!(SetWindowsHookExW(WH_KEYBOARD_LL, Some(key_hook), 0, 0))?;
+  win_err!(unsafe { SetWindowsHookExW(WH_KEYBOARD_LL, Some(key_hook), 0, 0) })?;
   Ok(spawn(move || {
     let result = unsafe { SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) };
     if result == 0 {

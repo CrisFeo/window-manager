@@ -27,7 +27,7 @@ macro_rules! win_err {
   ($call:expr) => {
     {
       unsafe { SetLastError(0) };
-      let result = unsafe { $call };
+      let result = $call;
       if result == 0 {
         let code = unsafe { GetLastError() };
         if code != 0 {
@@ -43,10 +43,12 @@ macro_rules! win_err {
 }
 
 pub fn run(
-  active_border_settings: active_border::Settings,
+  active_border_settings: Option<active_border::Settings>,
   key_event_handler: hotkey::KeyEventHandler,
 ) {
-  active_border::setup(active_border_settings).unwrap();
+  if let Some(active_border_settings) = active_border_settings {
+    active_border::setup(active_border_settings).unwrap();
+  }
   let hotkey_thread = hotkey::setup(key_event_handler).unwrap();
   unsafe {
     let mut message = std::mem::zeroed();

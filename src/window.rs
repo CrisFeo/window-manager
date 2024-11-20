@@ -29,14 +29,14 @@ impl Window {
   pub fn from_handle(handle: HWND) -> Result<Self> {
     let class_name = {
       let mut v = Vec::with_capacity(1024);
-      let count = win_err!(GetClassNameW(handle, v.as_mut_ptr(), v.capacity() as i32))?;
+      let count = win_err!(unsafe { GetClassNameW(handle, v.as_mut_ptr(), v.capacity() as i32) })?;
       unsafe { v.set_len(count as usize) };
       String::from_utf16_lossy(&v)
     };
     let title = {
-      let count = win_err!(GetWindowTextLengthW(handle))?;
+      let count = win_err!(unsafe { GetWindowTextLengthW(handle) })?;
       let mut v = Vec::with_capacity(count as usize + 1);
-      let count = win_err!(GetWindowTextW(handle, v.as_mut_ptr(), v.capacity() as i32))?;
+      let count = win_err!(unsafe { GetWindowTextW(handle, v.as_mut_ptr(), v.capacity() as i32) })?;
       unsafe { v.set_len(count as usize) };
       String::from_utf16_lossy(&v)
     };
@@ -47,7 +47,7 @@ impl Window {
       right: 0,
       bottom: 0,
     };
-    win_err!(GetWindowRect(handle, &mut actual_rect))?;
+    win_err!(unsafe { GetWindowRect(handle, &mut actual_rect) })?;
     let actual_rect = Rect {
       x: actual_rect.left,
       y: actual_rect.top,
@@ -177,7 +177,7 @@ impl Window {
     }
     // Tool windows show up at the top level but should be ignored - they're not good
     // candidates for window management
-    let extended_styles = win_err!(GetWindowLongW(self.handle, GWL_EXSTYLE))?;
+    let extended_styles = win_err!(unsafe { GetWindowLongW(self.handle, GWL_EXSTYLE) })?;
     if extended_styles as u32 & WS_EX_TOOLWINDOW != 0 {
       return Ok(false);
     }
@@ -190,7 +190,7 @@ impl Window {
       return Ok(false);
     }
     let flags = SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOCOPYBITS | SWP_NOOWNERZORDER;
-    win_err!(
+    win_err!(unsafe {
       SetWindowPos(
         self.handle,
         0,
@@ -200,7 +200,7 @@ impl Window {
         rect.h + self.offset.h,
         flags
       )
-   )?;
+    })?;
     Ok(true)
   }
 
@@ -209,22 +209,22 @@ impl Window {
     if foreground_handle == 0 {
       return Err(anyhow!("foreground window could not be found"));
     }
-    let foreground_thread_id = win_err!(GetWindowThreadProcessId(foreground_handle, ptr::null_mut()))?;
+    let foreground_thread_id = win_err!(unsafe { GetWindowThreadProcessId(foreground_handle, ptr::null_mut()) })?;
     let current_thread_id = unsafe { GetCurrentThreadId() };
     // If the currently active window isn't owned by the current thread we need to attach
     // to its event queue otherwise we won't have permission to activate it.
     // This is some sort of Microsoft mitigation for applications accidentally stealing
     // focus while they are in the background
     if current_thread_id != foreground_thread_id {
-      win_err!(AttachThreadInput(current_thread_id, foreground_thread_id, 1))?;
+      win_err!(unsafe { AttachThreadInput(current_thread_id, foreground_thread_id, 1) })?;
     }
-    win_err!(BringWindowToTop(self.handle))?;
+    win_err!(unsafe { BringWindowToTop(self.handle) })?;
     let result = unsafe { ShowWindow(self.handle, SW_SHOW) };
     if result == 0 {
       return Ok(false);
     }
     if current_thread_id != foreground_thread_id {
-      win_err!(AttachThreadInput(current_thread_id, foreground_thread_id, 0))?;
+      win_err!(unsafe { AttachThreadInput(current_thread_id, foreground_thread_id, 0) })?;
     }
     Ok(true)
   }
@@ -233,13 +233,27 @@ impl Window {
     unsafe { ShowWindow(self.handle, SW_MAXIMIZE) };
   }
 
+  pub fn get_maximized(&self) -> bool {
+    let result = unsafe { IsZoomed(self.handle) };
+    result == 1
+  }
+
+  pub fn ensure_not_maximized(self) -> Result<Self> {
+    if self.get_maximized() {
+      unsafe { ShowWindow(self.handle, SW_SHOWNOACTIVATE) };
+      Self::from_handle(self.handle)
+    } else {
+      Ok(self)
+    }
+  }
+
   pub fn redraw(&self) {
     unsafe { RedrawWindow(self.handle, ptr::null(), 0, RDW_INVALIDATE) };
   }
 
   pub fn resolution(&self) -> Result<(i32, i32)> {
-    let x = win_err!(GetSystemMetrics(SM_CXSCREEN))?;
-    let y = win_err!(GetSystemMetrics(SM_CYSCREEN))?;
+    let x = win_err!(unsafe { GetSystemMetrics(SM_CXSCREEN) })?;
+    let y = win_err!(unsafe { GetSystemMetrics(SM_CYSCREEN) })?;
     Ok((x, y))
   }
 
