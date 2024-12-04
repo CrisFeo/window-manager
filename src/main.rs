@@ -43,6 +43,7 @@ fn handle_key(key: Key, held: &HashSet<Key>) -> Option<hotkey::HotkeyAction> {
     let s = (key, held);
     map!(s, Backtick,  [Win, Shf],       print_windows());
     map!(s, Backtick,  [Win],            terminal());
+    map!(s, N,         [N, Win],         notes());
     map!(s, H,         [H, Win],         focus(Left));
     map!(s, J,         [J, Win],         focus(Down));
     map!(s, K,         [K, Win],         focus(Up));
@@ -98,9 +99,21 @@ fn print_windows() -> Result<()> {
 }
 
 fn terminal() -> Result<()> {
-  //let term_cmd = "C:\\tools\\alacritty\\alacritty.exe --config-file alacritty.yml";
   let term_cmd = "%LocalAppData%\\Microsoft\\WindowsApps\\wt.exe --focus";
   let script = format!("start {term_cmd}");
+  Command::new("C:\\windows\\system32\\cmd.exe")
+    .args([ "/c", &script ])
+    .spawn()?;
+  Ok(())
+}
+
+fn notes() -> Result<()> {
+  let wt = "%LocalAppData%\\Microsoft\\WindowsApps\\wt.exe";
+  let wt_args = "--focus --profile Alpine";
+  let wsl = "C:\\Windows\\system32\\wsl.exe";
+  let wsl_args = "-d Alpine";
+  let cmd = "sh -c '/home/cris/.bin/n'";
+  let script = format!("start {wt} {wt_args} {wsl} {wsl_args} -- {cmd}");
   Command::new("C:\\windows\\system32\\cmd.exe")
     .args([ "/c", &script ])
     .spawn()?;
