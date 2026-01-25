@@ -40,6 +40,7 @@ macro_rules! map {
 fn handle_key(key: Key, held: &HashSet<Key>) -> Option<hotkey::HotkeyAction> {
     use Key::*;
     use Direction::*;
+    println!("{key:?} {held:#?}");
     let s = (key, held);
     map!(s, Backtick,  [Win, Shf],       print_windows());
     map!(s, Backtick,  [Win],            terminal("bash --login"));

@@ -1,0 +1,53 @@
+#!/bin/sh
+set -euf
+. "$(dirname "$0")/config"
+
+CONTAINER_NAME="$PROJECT_NAME-devenv"
+
+if [ "${1-}" = '--rebuild' ]; then
+  echo "$CONTAINER_NAME rebuild requested, deleting existing container..."
+  docker rm "$CONTAINER_NAME" 1> /dev/null 2>&1 || :
+fi
+
+STATUS="$(docker inspect -f '{{.State.Status}}' "$CONTAINER_NAME" 2> /dev/null || :)"
+if [ "$STATUS" = 'running' ]; then
+  echo "$CONTAINER_NAME running, connecting to container..."
+  docker exec       \
+    --interactive   \
+    --tty           \
+    $CONTAINER_NAME \
+    tmux
+elif [ "$STATUS" = 'exited' ]; then
+  echo "$CONTAINER_NAME stopped, restarting container..."
+  docker start      \
+    --interactive   \
+    --attach        \
+    $CONTAINER_NAME
+else
+  echo "$CONTAINER_NAME not found, creating container..."
+  docker build ./devenv                                         \
+    --build-arg USER="$USER"                                    \
+    --build-arg USER_UID="$(id -u)"                             \
+    --build-arg USER_GID="$(id -g)"                             \
+    --build-arg DOCKER_GID="$(stat -c %g /var/run/docker.sock)" \
+    --tag "$CONTAINER_NAME:latest"
+  LOCAL_WORKSPACE_FOLDER="${LOCAL_WORKSPACE_FOLDER:-$(pwd)}"
+  PS1="\[\e[32m\]$CONTAINER_NAME\[\e[m\] \w\n\[\e[;33m\]>\[\e[m\] "
+  docker run                                                                 \
+    --name $CONTAINER_NAME                                                   \
+    --interactive                                                            \
+    --tty                                                                    \
+    --volume '//var/run/docker.sock://var/run/docker.sock'                   \
+    --volume "$SSH_AUTH_SOCK:/ssh-agent"                                     \
+    --env "TERM=$TERM"                                                       \
+    --env "LANG=$LANG"                                                       \
+    --env "SHELL=/bin/bash"                                                  \
+    --env "SSH_AUTH_SOCK=/ssh-agent"                                         \
+    --env "LOCAL_WORKSPACE_FOLDER=$LOCAL_WORKSPACE_FOLDER"                   \
+    --env "PS1=$PS1"                                                         \
+    --mount "type=bind,source=$LOCAL_WORKSPACE_FOLDER,target=/$PROJECT_NAME" \
+    --workdir "/$PROJECT_NAME"                                               \
+    $ADDITIONAL_DOCKER_ARGS                                                  \
+    "$CONTAINER_NAME:latest"                                                 \
+    tmux
+fi

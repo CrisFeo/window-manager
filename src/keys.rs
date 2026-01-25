@@ -20,27 +20,29 @@ pub enum Key {
 }
 
 impl Key {
-  pub fn from_scan_code(scan_code: u32) -> Self {
+  pub fn from_scan_code(scan_code: u32) -> Option<Self> {
     use Key::*;
     match scan_code {
-      91 => Win,
-      42 => Shf,
-      29 => Ctl,
-      56 => Alt,
-      35 => H,
-      36 => J,
-      37 => K,
-      38 => L,
-      49 => N,
-      20 => T,
-      21 => Y,
-      22 => U,
-      23 => I,
-      39 => SemiColon,
-      41 => Backtick,
-      11 => Num(0),
-      n if (2..=10).contains(&n) => Num(n - 1),
-      n => Code(n),
+      91 => Some(Win),
+      42 => Some(Shf),
+      29 => Some(Ctl),
+      56 => Some(Alt),
+      35 => Some(H),
+      36 => Some(J),
+      37 => Some(K),
+      38 => Some(L),
+      49 => Some(N),
+      20 => Some(T),
+      21 => Some(Y),
+      22 => Some(U),
+      23 => Some(I),
+      39 => Some(SemiColon),
+      41 => Some(Backtick),
+      11 => Some(Num(0)),
+      n if (2..=10).contains(&n) => Some(Num(n - 1)),
+      n if (0x3A..=0x40).contains(&n) => None, // undefined
+      0xE8 => None, // undefined
+      n => Some(Code(n)),
     }
   }
 }

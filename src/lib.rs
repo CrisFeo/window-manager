@@ -52,9 +52,15 @@ pub fn run(
   let hotkey_thread = hotkey::setup(key_event_handler).unwrap();
   unsafe {
     let mut message = std::mem::zeroed();
-    while GetMessageW(&mut message, 0, 0, 0) != 0 {
+    let mut result;
+    loop {
+      result = GetMessageW(&mut message, 0, 0, 0);
       DispatchMessageW(&message);
+      if result == 0 {
+        break;
+      }
     }
+    println!("event loop exited: {}", result);
   }
   hotkey_thread.join().unwrap();
 }

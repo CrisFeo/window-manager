@@ -57,14 +57,13 @@ unsafe extern "system" fn key_hook(code: i32, w_param: WPARAM, l_param: LPARAM) 
   if code >= 0 && (*info).flags & LLKHF_INJECTED == 0 {
     let mut context = CONTEXT.get().unwrap().try_lock();
     if let Ok(ref mut context) = context {
-      let is_up = msg_type == WM_KEYUP || msg_type == WM_SYSKEYUP;
-      let key = Key::from_scan_code((*info).scanCode);
-      let modified = if is_up {
-        context.held_keys.remove(&key)
-      } else {
-        context.held_keys.insert(key)
-      };
-      if modified {
+      let scan_code = (*info).scanCode;
+      let key = record_key_event(
+        &mut context.held_keys,
+        scan_code,
+        msg_type
+      );
+      if let Some(key) = key {
         let handler = &context.key_event_handler;
         let action = handler(key, &context.held_keys);
         if let Some(action) = action {
@@ -77,9 +76,28 @@ unsafe extern "system" fn key_hook(code: i32, w_param: WPARAM, l_param: LPARAM) 
       }
     }
   }
-  println!("HOOK: {}", start.elapsed().as_millis());
+  println!("HOOK h:{handled} {}μs ", start.elapsed().as_micros());
   match handled {
     true => 1,
     false => CallNextHookEx(0, code, w_param, l_param),
+  }
+}
+
+fn record_key_event(
+  held_keys: &mut HashSet<Key>,
+  scan_code: u32,
+  msg_type: u32
+) -> Option<Key> {
+  let key = Key::from_scan_code(scan_code)?;
+  let is_up = msg_type == WM_KEYUP || msg_type == WM_SYSKEYUP;
+  let modified = if is_up {
+    held_keys.remove(&key)
+  } else {
+    held_keys.insert(key)
+  };
+  if !modified {
+    None
+  } else {
+    Some(key)
   }
 }

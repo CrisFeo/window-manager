@@ -1,0 +1,2 @@
+PROJECT_NAME='window-manager'
+CARGO_ARGS='--target=x86_64-pc-windows-gnu'

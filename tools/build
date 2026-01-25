@@ -1,0 +1,5 @@
+#!/bin/sh
+set -euf
+. "$(dirname "$0")/config"
+
+cargo build $CARGO_ARGS "$@"

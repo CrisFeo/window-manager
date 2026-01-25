@@ -1,0 +1,8 @@
+#!/bin/sh
+set -euf
+. "$(dirname "$0")/config"
+
+./tools/build "$@"
+
+binary="./target/x86_64-pc-windows-gnu/debug/$PROJECT_NAME.exe"
+cp "$binary" /mnt/c/tools/window-manager
