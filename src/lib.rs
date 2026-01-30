@@ -4,8 +4,8 @@ use std::error::Error;
 use windows_sys::Win32::Foundation::*;
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
 
-pub mod active_border;
 pub mod hotkey;
+pub mod input;
 pub mod keys;
 pub mod window;
 pub mod desktop;
@@ -42,13 +42,7 @@ macro_rules! win_err {
   }
 }
 
-pub fn run(
-  active_border_settings: Option<active_border::Settings>,
-  key_event_handler: hotkey::KeyEventHandler,
-) {
-  if let Some(active_border_settings) = active_border_settings {
-    active_border::setup(active_border_settings).unwrap();
-  }
+pub fn run(key_event_handler: hotkey::KeyEventHandler) {
   let hotkey_thread = hotkey::setup(key_event_handler).unwrap();
   unsafe {
     let mut message = std::mem::zeroed();
@@ -60,7 +54,7 @@ pub fn run(
         break;
       }
     }
-    println!("event loop exited: {}", result);
+    println!("EVENT loop exited: {}", result);
   }
   hotkey_thread.join().unwrap();
 }

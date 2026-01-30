@@ -1,72 +1,93 @@
 use std::collections::HashSet;
 use std::process::Command;
 use anyhow::Result;
-use window_manager::keys::Key;
-use window_manager::colors::Color;
+use window_manager::keys::{Key, KeyState};
 use window_manager::window::{Window, Rect};
 use window_manager::desktop;
 use window_manager::hotkey;
-use window_manager::active_border;
+use window_manager::input;
 
 pub const GAP_SIZE: i32 = 20;
-pub const BORDER_SIZE: i32 = 8;
-pub const BORDER_RADIUS: i32 = 17;
-pub const BORDER_COLOR: Color = Color::new(25, 120, 20);
 
 fn main() {
   window_manager::run(
-    active_border_settings(),
     Box::new(handle_key),
   );
 }
 
-fn active_border_settings() -> Option<active_border::Settings> {
-  //Some(active_border::Settings{
-    //border_color: BORDER_COLOR,
-    //border_radius: BORDER_RADIUS,
-    //border_size: BORDER_SIZE,
-  //})
-  None
-}
-
-macro_rules! map {
-  ($state: expr, $key:expr, $down:expr, $call:expr) => {
-    if $state.0 == $key && *$state.1 == HashSet::from($down) {
-      return Some((stringify!($call).into(), Box::new(move || { $call })))
+macro_rules! remap {
+  ($state: expr, $from: expr, $to: expr) => {
+    if $state.0 == $from {
+      if $state.1 == KeyState::Down || $state.1 == KeyState::Repeat {
+      return Some((
+        stringify!($from to $to down).into(),
+        Box::new(move || { input::send($to, true); Ok(()) }),
+      ));
+      } else {
+        return Some((
+          stringify!($from to $to up).into(),
+          Box::new(move || { input::send($to, false); Ok(()) }),
+        ));
+      }
     }
   }
 }
 
-fn handle_key(key: Key, held: &HashSet<Key>) -> Option<hotkey::HotkeyAction> {
+macro_rules! map {
+  ($state: expr, $key:expr, $held:expr, $call:expr) => {
+    if $state.0 == $key {
+      let mut held = HashSet::from($held);
+      if $state.1 == KeyState::Up {
+        if *$state.2 == held {
+          return Some((
+            stringify!($call).into(),
+            Box::new(move || { $call })
+          ))
+        }
+      } else {
+        // we need to swallow down and repeat events for our hotkeys
+        held.insert($key);
+        if *$state.2 == held {
+          return Some((
+            stringify!(swallowing $call).into(),
+            Box::new(move || { Ok(()) })
+          ))
+        }
+      }
+    }
+  }
+}
+
+fn handle_key(key: Key, state: KeyState, held: &HashSet<Key>) -> Option<hotkey::HotkeyAction> {
     use Key::*;
     use Direction::*;
-    println!("{key:?} {held:#?}");
-    let s = (key, held);
-    map!(s, Backtick,  [Win, Shf],       print_windows());
-    map!(s, Backtick,  [Win],            terminal("bash --login"));
-    map!(s, N,         [N, Win],         terminal("sh -c '/home/cris/.bin/n'"));
-    map!(s, H,         [H, Win],         focus(Left));
-    map!(s, J,         [J, Win],         focus(Down));
-    map!(s, K,         [K, Win],         focus(Up));
-    map!(s, L,         [L, Win],         focus(Right));
-    map!(s, SemiColon, [SemiColon, Win], focus_under());
-    map!(s, H,         [H, Win, Shf],    push(Left));
-    map!(s, J,         [J, Win, Shf],    push(Down));
-    map!(s, K,         [K, Win, Shf],    push(Up));
-    map!(s, L,         [L, Win, Shf],    push(Right));
-    map!(s, Y,         [Y, Win, Shf],    push_maximize());
-    map!(s, U,         [U, Win, Shf],    push_big());
-    map!(s, I,         [I, Win, Shf],    push_center());
-    map!(s, Num(1),    [Num(1), Win],    desktop(0));
-    map!(s, Num(2),    [Num(2), Win],    desktop(1));
-    map!(s, Num(3),    [Num(3), Win],    desktop(2));
-    map!(s, Num(4),    [Num(4), Win],    desktop(3));
-    map!(s, Num(5),    [Num(5), Win],    desktop(4));
-    map!(s, Num(6),    [Num(6), Win],    desktop(5));
-    map!(s, Num(7),    [Num(7), Win],    desktop(6));
-    map!(s, Num(8),    [Num(8), Win],    desktop(7));
-    map!(s, Num(9),    [Num(9), Win],    desktop(8));
-    map!(s, Num(0),    [Num(0), Win],    desktop(9));
+    let s = (key, state, held);
+    remap!(s, CapsLock, Ctl);
+    map!(s, Backtick,  [Win, Shf], print_windows());
+    map!(s, Backtick,  [Win],      terminal("bash --login"));
+    map!(s, N,         [Win],      terminal("sh -c '/home/cris/.bin/n'"));
+    map!(s, H,         [Win],      focus(Left));
+    map!(s, J,         [Win],      focus(Down));
+    map!(s, K,         [Win],      focus(Up));
+    map!(s, L,         [Win],      focus(Right));
+    map!(s, SemiColon, [Win],      focus_under());
+    map!(s, H,         [Win, Shf], push(Left));
+    map!(s, J,         [Win, Shf], push(Down));
+    map!(s, K,         [Win, Shf], push(Up));
+    map!(s, L,         [Win, Shf], push(Right));
+    map!(s, Y,         [Win, Shf], push_maximize());
+    map!(s, U,         [Win, Shf], push_big());
+    map!(s, I,         [Win, Shf], push_center());
+    map!(s, Num(1),    [Win],      desktop(0));
+    map!(s, Num(2),    [Win],      desktop(1));
+    map!(s, Num(3),    [Win],      desktop(2));
+    map!(s, Num(4),    [Win],      desktop(3));
+    map!(s, Num(5),    [Win],      desktop(4));
+    map!(s, Num(6),    [Win],      desktop(5));
+    map!(s, Num(7),    [Win],      desktop(6));
+    map!(s, Num(8),    [Win],      desktop(7));
+    map!(s, Num(9),    [Win],      desktop(8));
+    map!(s, Num(0),    [Win],      desktop(9));
     None
 }
 

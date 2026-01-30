@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use winvd::*;
-use crate::{window::*, active_border};
+use crate::{window::*};
 
 pub fn switch(n: u32) -> Result<()> {
   let count = get_desktop_count()
@@ -11,7 +11,6 @@ pub fn switch(n: u32) -> Result<()> {
     let windows = Window::all()?;
     if let Some(window) = windows.first() {
       window.set_active()?;
-      active_border::force_redraw();
     }
   }
   Ok(())
