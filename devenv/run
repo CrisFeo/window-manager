@@ -1,8 +1,18 @@
 #!/bin/sh
 set -euf
-. "$(dirname "$0")/config"
 
+# treat the original working directory as the project root
+LOCAL_WORKSPACE_FOLDER="${LOCAL_WORKSPACE_FOLDER:-$(pwd)}"
+
+# run everything else
+cd "$(dirname "$0")"
+
+PROJECT_NAME="$(basename "$(readlink -f "$(pwd)/..")")"
 CONTAINER_NAME="$PROJECT_NAME-devenv"
+ADDITIONAL_DOCKER_ARGS=""
+
+# override defaults with custom values
+. ./config
 
 if [ "${1-}" = '--rebuild' ]; then
   echo "$CONTAINER_NAME rebuild requested, deleting existing container..."
@@ -25,27 +35,27 @@ elif [ "$STATUS" = 'exited' ]; then
     $CONTAINER_NAME
 else
   echo "$CONTAINER_NAME not found, creating container..."
-  docker build ./devenv                                         \
+  docker build .                                                \
     --build-arg USER="$USER"                                    \
     --build-arg USER_UID="$(id -u)"                             \
     --build-arg USER_GID="$(id -g)"                             \
     --build-arg DOCKER_GID="$(stat -c %g /var/run/docker.sock)" \
     --tag "$CONTAINER_NAME:latest"
-  LOCAL_WORKSPACE_FOLDER="${LOCAL_WORKSPACE_FOLDER:-$(pwd)}"
-  PS1="\[\e[32m\]$CONTAINER_NAME\[\e[m\] \w\n\[\e[;33m\]>\[\e[m\] "
   docker run                                                                 \
     --name $CONTAINER_NAME                                                   \
     --interactive                                                            \
     --tty                                                                    \
-    --volume '//var/run/docker.sock://var/run/docker.sock'                   \
-    --volume "$SSH_AUTH_SOCK:/ssh-agent"                                     \
     --env "TERM=$TERM"                                                       \
     --env "LANG=$LANG"                                                       \
     --env "SHELL=/bin/bash"                                                  \
     --env "SSH_AUTH_SOCK=/ssh-agent"                                         \
     --env "LOCAL_WORKSPACE_FOLDER=$LOCAL_WORKSPACE_FOLDER"                   \
-    --env "PS1=$PS1"                                                         \
+    --mount "type=bind,source=$SSH_AUTH_SOCK,target=/ssh-agent"              \
     --mount "type=bind,source=$LOCAL_WORKSPACE_FOLDER,target=/$PROJECT_NAME" \
+    --mount "type=bind,source=$HOME/.gitconfig,target=$HOME/.gitconfig,ro"   \
+    --mount "type=bind,source=$HOME/.tmux.conf,target=$HOME/.tmux.conf,ro"   \
+    --mount "type=bind,source=$HOME/.config/kak,target=$HOME/.config/kak,ro" \
+    --mount "type=bind,source=$(pwd)/.pi,target=$HOME/.pi"                   \
     --workdir "/$PROJECT_NAME"                                               \
     $ADDITIONAL_DOCKER_ARGS                                                  \
     "$CONTAINER_NAME:latest"                                                 \

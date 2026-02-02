@@ -1,7 +1,3 @@
-export PROJECT_NAME='window-manager'
 export ADDITIONAL_DOCKER_ARGS=" \
-  --mount type=bind,source=$HOME/.gitconfig,target=$HOME/.gitconfig,ro   \
-  --mount type=bind,source=$HOME/.tmux.conf,target=$HOME/.tmux.conf,ro   \
-  --mount type=bind,source=$HOME/.config/kak,target=$HOME/.config/kak,ro \
-  --mount type=bind,source=/mnt/c,target=/mnt/c                          \
+  --mount type=bind,source=/mnt/c,target=/mnt/c \
 "
