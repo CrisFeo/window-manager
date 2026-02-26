@@ -21,12 +21,12 @@ macro_rules! remap {
       if $state.1 == KeyState::Down || $state.1 == KeyState::Repeat {
       return Some((
         stringify!($from to $to down).into(),
-        Box::new(move || { input::send($to, true); Ok(()) }),
+        Box::new(move || { input::send(&[($to, true)]); Ok(()) }),
       ));
       } else {
         return Some((
           stringify!($from to $to up).into(),
-          Box::new(move || { input::send($to, false); Ok(()) }),
+          Box::new(move || { input::send(&[($to, false)]); Ok(()) }),
         ));
       }
     }
@@ -41,7 +41,17 @@ macro_rules! map {
         if *$state.2 == held {
           return Some((
             stringify!($call).into(),
-            Box::new(move || { $call })
+            Box::new(move || {
+              // tapping a modifier like this prevents the start menu from opening if a hotkey
+              // uses the Win key as a modifier
+              if !input::is_down(Key::Alt) {
+                input::send(&[
+                  (Key::Alt, true),
+                  (Key::Alt, false),
+                ]);
+              }
+              $call
+            })
           ))
         }
       } else {

@@ -77,11 +77,12 @@ unsafe extern "system" fn key_hook(code: i32, w_param: WPARAM, l_param: LPARAM) 
       }
       let elapsed = start.elapsed().as_micros();
       println!("HOOK processed key event");
-      println!("  elapsed:   {elapsed}μs");
-      println!("  msg_type:  {msg_type}", );
-      println!("  scan_code: {scan_code}");
-      println!("  flags:     {flags:08b}", );
-      println!("  handled:   {handled}");
+      println!("  elapsed:    {elapsed}μs");
+      println!("  msg_type:   {msg_type}", );
+      println!("  scan_code:  {scan_code}");
+      println!("  flags:      {flags:08b}", );
+      println!("  parsed_key: {result:?}");
+      println!("  handled:    {handled}");
       print!("  held:      ");
       for key in context.held_keys.iter() {
         print!("{:?} ", key);
