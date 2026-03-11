@@ -51,6 +51,7 @@ impl Key {
       n if (2..=10).contains(&n) => Some(Num(n - 1)),
       n if (0x3A..=0x40).contains(&n) => None, // undefined
       0xE8 => None, // undefined
+      0 => None, // undefined
       n => Some(Code(n)),
     }
   }
