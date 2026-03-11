@@ -75,7 +75,7 @@ fn handle_key(key: Key, state: KeyState, held: &HashSet<Key>) -> Option<hotkey::
     remap!(s, CapsLock, Ctl);
     map!(s, Backtick,  [Win, Shf], print_windows());
     map!(s, Backtick,  [Win],      terminal("bash --login"));
-    map!(s, N,         [Win],      terminal("sh -c '/home/cris/.bin/n'"));
+    map!(s, N,         [Win],      terminal("sh -c '/home/cris/bin/n'"));
     map!(s, H,         [Win],      focus(Left));
     map!(s, J,         [Win],      focus(Down));
     map!(s, K,         [Win],      focus(Up));
