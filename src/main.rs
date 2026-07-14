@@ -73,6 +73,7 @@ fn handle_key(key: Key, state: KeyState, held: &HashSet<Key>) -> Option<hotkey::
     use Direction::*;
     let s = (key, state, held);
     remap!(s, CapsLock, Ctl);
+    remap!(s, Ctl, Alt);
     map!(s, Backtick,  [Win, Shf], print_windows());
     map!(s, Backtick,  [Win],      terminal("bash --login"));
     map!(s, N,         [Win],      terminal("sh -c '/home/cris/bin/n'"));

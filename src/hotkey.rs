@@ -55,7 +55,8 @@ unsafe extern "system" fn key_hook(code: i32, w_param: WPARAM, l_param: LPARAM) 
   let msg_type = w_param as u32;
   let info = l_param as *mut KBDLLHOOKSTRUCT;
   let flags = (*info).flags;
-  if code >= 0 {
+  let is_injected = flags & 0b10000 != 0;
+  if code >= 0 && !is_injected {
     let mut context = CONTEXT.get().unwrap().try_lock();
     if let Ok(ref mut context) = context {
       let scan_code = (*info).scanCode;
