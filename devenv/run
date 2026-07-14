@@ -14,7 +14,19 @@ ADDITIONAL_DOCKER_ARGS=""
 # override defaults with custom values
 . ./config
 
+should_restart="false"
+should_rebuild="false"
+
 if [ "${1-}" = '--rebuild' ]; then
+  should_restart="true"
+  should_rebuild="true"
+fi
+
+if [ "${1-}" = '--restart' ]; then
+  should_restart="true"
+fi
+
+if [ "$should_restart" = 'true' ]; then
   echo "$CONTAINER_NAME rebuild requested, deleting existing container..."
   docker rm "$CONTAINER_NAME" 1> /dev/null 2>&1 || :
 fi
@@ -35,12 +47,20 @@ elif [ "$STATUS" = 'exited' ]; then
     $CONTAINER_NAME
 else
   echo "$CONTAINER_NAME not found, creating container..."
-  docker build .                                                \
-    --build-arg USER="$USER"                                    \
-    --build-arg USER_UID="$(id -u)"                             \
-    --build-arg USER_GID="$(id -g)"                             \
-    --build-arg DOCKER_GID="$(stat -c %g /var/run/docker.sock)" \
-    --tag "$CONTAINER_NAME:latest"
+  stat_fmt_flag='-c'
+  if [ "$(uname)" = "Darwin" ]; then
+    stat_fmt_flag='-f'
+    SSH_AUTH_SOCK='/run/host-services/ssh-auth.sock'
+  fi
+  docker_gid="$(stat "$stat_fmt_flag" %g /var/run/docker.sock)"
+  if [ "$should_rebuild" = 'true' ]; then
+    docker build .                         \
+      --build-arg USER="$USER"             \
+      --build-arg USER_UID="$(id -u)"      \
+      --build-arg USER_GID="$(id -g)"      \
+      --build-arg DOCKER_GID="$docker_gid" \
+      --tag "$CONTAINER_NAME:latest"
+  fi
   docker run                                                                 \
     --name $CONTAINER_NAME                                                   \
     --interactive                                                            \
@@ -61,3 +81,4 @@ else
     "$CONTAINER_NAME:latest"                                                 \
     tmux
 fi
+
