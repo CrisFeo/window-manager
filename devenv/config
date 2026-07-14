@@ -1,3 +1,3 @@
 export ADDITIONAL_DOCKER_ARGS=" \
-  --mount type=bind,source=/mnt/c,target=/mnt/c \
+  --mount type=bind,source=/mnt/c/tools/window-manager,target=/output \
 "
