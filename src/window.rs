@@ -1,12 +1,12 @@
-use std::mem;
-use std::ptr;
-use std::fmt::Write;
-use std::os::raw::c_void;
+use crate::*;
 use anyhow::{anyhow, Result};
+use std::fmt::Write;
+use std::mem;
+use std::os::raw::c_void;
+use std::ptr;
 use windows_sys::Win32::Graphics::Dwm::*;
 use windows_sys::Win32::Graphics::Gdi::*;
 use windows_sys::Win32::System::Threading::*;
-use crate::*;
 
 #[derive(Debug, Clone)]
 pub struct Rect {
@@ -70,7 +70,9 @@ impl Window {
         mem::size_of::<RECT>() as u32,
       );
       if result != 0 {
-        return Err(anyhow!("failed to retrieve extended frame bounds with result: {result}"));
+        return Err(anyhow!(
+          "failed to retrieve extended frame bounds with result: {result}"
+        ));
       }
       Box::from_raw(value_ptr)
     };
@@ -118,7 +120,7 @@ impl Window {
       match window {
         Ok(window) => match window.is_manageable() {
           Ok(true) => windows.push(window),
-          Ok(false) => {},
+          Ok(false) => {}
           Err(error) => errors.push(error),
         },
         Err(error) => errors.push(error),
@@ -133,7 +135,9 @@ impl Window {
       for error in errors {
         _ = write!(all_errors, "\n  {error}");
       }
-      Err(anyhow!("error creating window(s) from handle: {all_errors}"))
+      Err(anyhow!(
+        "error creating window(s) from handle: {all_errors}"
+      ))
     } else {
       Ok(windows)
     }
@@ -156,7 +160,9 @@ impl Window {
         mem::size_of::<u32>() as u32,
       );
       if result != 0 {
-        return Err(anyhow!("failed to retrieve window cloak status with result: {result}"));
+        return Err(anyhow!(
+          "failed to retrieve window cloak status with result: {result}"
+        ));
       }
       *Box::from_raw(value_ptr)
     };
@@ -166,12 +172,12 @@ impl Window {
     // There are some persistent system windows that we should always ignore by class name
     if self.class_name == "Progman"
       || self.class_name == "Shell_TrayWnd"
-      || self.class_name == "Winit Thread Event Target" {
+      || self.class_name == "Winit Thread Event Target"
+    {
       return Ok(false);
     }
     // Ditto with titles
-    if self.title == "Cortana"
-      || self.title == "Search" {
+    if self.title == "Cortana" || self.title == "Search" {
       return Ok(false);
     }
     // Tool windows show up at the top level but should be ignored - they're not good
@@ -197,7 +203,7 @@ impl Window {
         rect.y + self.offset.y,
         rect.w + self.offset.w,
         rect.h + self.offset.h,
-        flags
+        flags,
       )
     })?;
     Ok(true)
@@ -208,7 +214,8 @@ impl Window {
     if foreground_handle == 0 {
       return Err(anyhow!("foreground window could not be found"));
     }
-    let foreground_thread_id = win_err!(unsafe { GetWindowThreadProcessId(foreground_handle, ptr::null_mut()) })?;
+    let foreground_thread_id =
+      win_err!(unsafe { GetWindowThreadProcessId(foreground_handle, ptr::null_mut()) })?;
     let current_thread_id = unsafe { GetCurrentThreadId() };
     // If the currently active window isn't owned by the current thread we need to attach
     // to its event queue otherwise we won't have permission to activate it.
@@ -255,11 +262,11 @@ impl Window {
     let y = win_err!(unsafe { GetSystemMetrics(SM_CYSCREEN) })?;
     Ok((x, y))
   }
-
 }
 
 unsafe extern "system" fn enum_windows_callback(hwnd: HWND, lparam: LPARAM) -> BOOL {
-  let closure: &mut &mut dyn FnMut(HWND) = &mut *(lparam as *mut c_void as *mut &mut dyn FnMut(HWND));
+  let closure: &mut &mut dyn FnMut(HWND) =
+    &mut *(lparam as *mut c_void as *mut &mut dyn FnMut(HWND));
   closure(hwnd);
   TRUE
 }

@@ -1,16 +1,8 @@
-use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
-  SendInput,
-  GetAsyncKeyState,
-  MapVirtualKeyW,
-  INPUT,
-  INPUT_KEYBOARD,
-  INPUT_0,
-  KEYBDINPUT,
-  KEYEVENTF_SCANCODE,
-  KEYEVENTF_KEYUP,
-  MAPVK_VSC_TO_VK,
-};
 use crate::keys::Key;
+use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
+  GetAsyncKeyState, MapVirtualKeyW, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT,
+  KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE, MAPVK_VSC_TO_VK,
+};
 
 pub fn send(keys: &[(Key, bool)]) {
   let count = keys
@@ -40,11 +32,7 @@ pub fn send(keys: &[(Key, bool)]) {
     })
     .collect::<Vec<_>>();
   unsafe {
-    SendInput(
-      count,
-      inputs.as_ptr(),
-      size_of::<INPUT>() as i32,
-    );
+    SendInput(count, inputs.as_ptr(), size_of::<INPUT>() as i32);
   }
 }
 
@@ -52,9 +40,7 @@ pub fn is_down(key: Key) -> bool {
   let scan_code = key.to_scan_code();
   let result = unsafe {
     let virtual_key = MapVirtualKeyW(scan_code, MAPVK_VSC_TO_VK);
-    let virtual_key = virtual_key
-      .try_into()
-      .expect("could not cast vk into i32");
+    let virtual_key = virtual_key.try_into().expect("could not cast vk into i32");
     GetAsyncKeyState(virtual_key)
   };
   result < 0

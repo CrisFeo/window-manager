@@ -1,12 +1,12 @@
+use crate::keys::{Key, KeyState};
+use crate::*;
+use anyhow::Result;
 use std::borrow::Cow;
 use std::collections::HashSet;
-use std::thread::{JoinHandle, spawn};
+use std::sync::mpsc::{channel, Sender};
 use std::sync::{Mutex, OnceLock};
-use std::sync::mpsc::{Sender, channel};
-use anyhow::Result;
+use std::thread::{spawn, JoinHandle};
 use windows_sys::Win32::UI::HiDpi::*;
-use crate::*;
-use crate::keys::{Key, KeyState};
 
 pub type KeyEventHandler = Box<dyn Send + Fn(Key, KeyState, &HashSet<Key>) -> Option<HotkeyAction>>;
 
@@ -22,7 +22,7 @@ static CONTEXT: OnceLock<Mutex<Context>> = OnceLock::new();
 
 pub fn setup(key_event_handler: KeyEventHandler) -> Result<JoinHandle<()>> {
   let (tx, rx) = channel();
-  let context = Context{
+  let context = Context {
     key_event_handler,
     held_keys: HashSet::new(),
     action_sender: tx,
@@ -30,7 +30,8 @@ pub fn setup(key_event_handler: KeyEventHandler) -> Result<JoinHandle<()>> {
   let _ = CONTEXT.set(Mutex::new(context));
   win_err!(unsafe { SetWindowsHookExW(WH_KEYBOARD_LL, Some(key_hook), 0, 0) })?;
   Ok(spawn(move || {
-    let result = unsafe { SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) };
+    let result =
+      unsafe { SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) };
     if result == 0 {
       panic!("could not set action thread DPI awareness");
     }
@@ -38,10 +39,10 @@ pub fn setup(key_event_handler: KeyEventHandler) -> Result<JoinHandle<()>> {
       match rx.recv() {
         Ok((name, handler)) => {
           println!("ACTION running {name:?}");
-          if let Err(error) =  handler() {
+          if let Err(error) = handler() {
             println!("  {error}");
           }
-        },
+        }
         Err(error) => println!("ACTION error receiving next action: {error}"),
       }
     }
@@ -59,11 +60,7 @@ unsafe extern "system" fn key_hook(code: i32, w_param: WPARAM, l_param: LPARAM) 
     let mut context = CONTEXT.get().unwrap().try_lock();
     if let Ok(ref mut context) = context {
       let scan_code = (*info).scanCode;
-      let result = record_key_event(
-        &mut context.held_keys,
-        scan_code,
-        msg_type
-      );
+      let result = record_key_event(&mut context.held_keys, scan_code, msg_type);
       if let Some((key, state)) = result {
         let handler = &context.key_event_handler;
         let action = handler(key, state, &context.held_keys);
@@ -78,9 +75,9 @@ unsafe extern "system" fn key_hook(code: i32, w_param: WPARAM, l_param: LPARAM) 
       let elapsed = start.elapsed().as_micros();
       println!("HOOK processed key event");
       println!("  elapsed:    {elapsed}μs");
-      println!("  msg_type:   {msg_type}", );
+      println!("  msg_type:   {msg_type}",);
       println!("  scan_code:  {scan_code}");
-      println!("  flags:      {flags:08b}", );
+      println!("  flags:      {flags:08b}",);
       println!("  parsed_key: {result:?}");
       println!("  handled:    {handled}");
       print!("  held:      ");
@@ -99,7 +96,7 @@ unsafe extern "system" fn key_hook(code: i32, w_param: WPARAM, l_param: LPARAM) 
 fn record_key_event(
   held_keys: &mut HashSet<Key>,
   scan_code: u32,
-  msg_type: u32
+  msg_type: u32,
 ) -> Option<(Key, KeyState)> {
   let key = Key::from_scan_code(scan_code)?;
   let is_up = msg_type == WM_KEYUP || msg_type == WM_SYSKEYUP;

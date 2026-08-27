@@ -50,8 +50,8 @@ impl Key {
       11 => Some(Num(0)),
       n if (2..=10).contains(&n) => Some(Num(n - 1)),
       n if (0x3A..=0x40).contains(&n) => None, // undefined
-      0xE8 => None, // undefined
-      0 => None, // undefined
+      0xE8 => None,                            // undefined
+      0 => None,                               // undefined
       n => Some(Code(n)),
     }
   }
@@ -59,25 +59,25 @@ impl Key {
   pub fn to_scan_code(&self) -> u32 {
     use Key::*;
     match self {
-       Win => 91,
-       Shf => 42,
-       Ctl => 29,
-       Alt => 56,
-       H => 35,
-       J => 36,
-       K => 37,
-       L => 38,
-       N => 49,
-       T => 20,
-       Y => 21,
-       U => 22,
-       I => 23,
-       SemiColon => 39,
-       Backtick => 41,
-       CapsLock => 58,
-       Num(0) => 11,
-       Num(n) => n+1,
-       Code(n) => *n,
+      Win => 91,
+      Shf => 42,
+      Ctl => 29,
+      Alt => 56,
+      H => 35,
+      J => 36,
+      K => 37,
+      L => 38,
+      N => 49,
+      T => 20,
+      Y => 21,
+      U => 22,
+      I => 23,
+      SemiColon => 39,
+      Backtick => 41,
+      CapsLock => 58,
+      Num(0) => 11,
+      Num(n) => n + 1,
+      Code(n) => *n,
     }
   }
 }

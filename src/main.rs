@@ -1,28 +1,26 @@
+use anyhow::Result;
 use std::collections::HashSet;
 use std::process::Command;
-use anyhow::Result;
-use window_manager::keys::{Key, KeyState};
-use window_manager::window::{Window, Rect};
 use window_manager::desktop;
 use window_manager::hotkey;
 use window_manager::input;
+use window_manager::keys::{Key, KeyState};
+use window_manager::window::{Rect, Window};
 
 pub const GAP_SIZE: i32 = 20;
 
 fn main() {
-  window_manager::run(
-    Box::new(handle_key),
-  );
+  window_manager::run(Box::new(handle_key));
 }
 
 macro_rules! remap {
   ($state: expr, $from: expr, $to: expr) => {
     if $state.0 == $from {
       if $state.1 == KeyState::Down || $state.1 == KeyState::Repeat {
-      return Some((
-        stringify!($from to $to down).into(),
-        Box::new(move || { input::send(&[($to, true)]); Ok(()) }),
-      ));
+        return Some((
+          stringify!($from to $to down).into(),
+          Box::new(move || { input::send(&[($to, true)]); Ok(()) }),
+        ));
       } else {
         return Some((
           stringify!($from to $to up).into(),
@@ -69,37 +67,37 @@ macro_rules! map {
 }
 
 fn handle_key(key: Key, state: KeyState, held: &HashSet<Key>) -> Option<hotkey::HotkeyAction> {
-    use Key::*;
-    use Direction::*;
-    let s = (key, state, held);
-    remap!(s, CapsLock, Ctl);
-    remap!(s, Ctl, Alt);
-    map!(s, Backtick,  [Win, Shf], print_windows());
-    map!(s, Backtick,  [Win],      terminal("bash --login"));
-    map!(s, N,         [Win],      terminal("sh -c '/home/cris/bin/n'"));
-    map!(s, H,         [Win],      focus(Left));
-    map!(s, J,         [Win],      focus(Down));
-    map!(s, K,         [Win],      focus(Up));
-    map!(s, L,         [Win],      focus(Right));
-    map!(s, SemiColon, [Win],      focus_under());
-    map!(s, H,         [Win, Shf], push(Left));
-    map!(s, J,         [Win, Shf], push(Down));
-    map!(s, K,         [Win, Shf], push(Up));
-    map!(s, L,         [Win, Shf], push(Right));
-    map!(s, Y,         [Win, Shf], push_maximize());
-    map!(s, U,         [Win, Shf], push_big());
-    map!(s, I,         [Win, Shf], push_center());
-    map!(s, Num(1),    [Win],      desktop(0));
-    map!(s, Num(2),    [Win],      desktop(1));
-    map!(s, Num(3),    [Win],      desktop(2));
-    map!(s, Num(4),    [Win],      desktop(3));
-    map!(s, Num(5),    [Win],      desktop(4));
-    map!(s, Num(6),    [Win],      desktop(5));
-    map!(s, Num(7),    [Win],      desktop(6));
-    map!(s, Num(8),    [Win],      desktop(7));
-    map!(s, Num(9),    [Win],      desktop(8));
-    map!(s, Num(0),    [Win],      desktop(9));
-    None
+  use Direction::*;
+  use Key::*;
+  let s = (key, state, held);
+  remap!(s, CapsLock, Ctl);
+  remap!(s, Ctl, Alt);
+  map!(s, Backtick, [Win, Shf], print_windows());
+  map!(s, Backtick, [Win], terminal("bash --login"));
+  map!(s, N, [Win], terminal("sh -c '/home/cris/bin/n'"));
+  map!(s, H, [Win], focus(Left));
+  map!(s, J, [Win], focus(Down));
+  map!(s, K, [Win], focus(Up));
+  map!(s, L, [Win], focus(Right));
+  map!(s, SemiColon, [Win], focus_under());
+  map!(s, H, [Win, Shf], push(Left));
+  map!(s, J, [Win, Shf], push(Down));
+  map!(s, K, [Win, Shf], push(Up));
+  map!(s, L, [Win, Shf], push(Right));
+  map!(s, Y, [Win, Shf], push_maximize());
+  map!(s, U, [Win, Shf], push_big());
+  map!(s, I, [Win, Shf], push_center());
+  map!(s, Num(1), [Win], desktop(0));
+  map!(s, Num(2), [Win], desktop(1));
+  map!(s, Num(3), [Win], desktop(2));
+  map!(s, Num(4), [Win], desktop(3));
+  map!(s, Num(5), [Win], desktop(4));
+  map!(s, Num(6), [Win], desktop(5));
+  map!(s, Num(7), [Win], desktop(6));
+  map!(s, Num(8), [Win], desktop(7));
+  map!(s, Num(9), [Win], desktop(8));
+  map!(s, Num(0), [Win], desktop(9));
+  None
 }
 
 fn print_windows() -> Result<()> {
@@ -111,10 +109,7 @@ fn print_windows() -> Result<()> {
   println!("  resolution: {screen_w}x{screen_h}");
   println!(
     "  * {:?}\n    {:?}\n    {:?}\n    {:?}",
-    a.title,
-    a.class_name,
-    a.rect,
-    a.offset
+    a.title, a.class_name, a.rect, a.offset
   );
   for w in Window::all()? {
     if w.handle == a.handle {
@@ -122,10 +117,7 @@ fn print_windows() -> Result<()> {
     }
     println!(
       "  - {:?}\n    {:?}\n    {:?}\n    {:?}",
-      w.title,
-      w.class_name,
-      w.rect,
-      w.offset
+      w.title, w.class_name, w.rect, w.offset
     );
   }
   Ok(())
@@ -138,7 +130,7 @@ fn terminal(command: &str) -> Result<()> {
   let wsl_args = "-d Alpine";
   let script = format!("start {wt} {wt_args} {wsl} {wsl_args} -- {command}");
   Command::new("C:\\windows\\system32\\cmd.exe")
-    .args([ "/c", &script ])
+    .args(["/c", &script])
     .spawn()?;
   Ok(())
 }
@@ -182,8 +174,7 @@ fn focus_under() -> Result<()> {
     Some(a) => a,
     _ => return Ok(()),
   };
-  let windows = Window::all()
-    ?
+  let windows = Window::all()?
     .into_iter()
     .filter(|w| w.handle != a.handle)
     .filter(|w| w.rect.x == a.rect.x && w.rect.y == a.rect.y)
@@ -219,29 +210,29 @@ fn push(direction: Direction) -> Result<()> {
     a.rect.clone()
   };
   let rect = match direction {
-    Direction::Left =>  Rect {
+    Direction::Left => Rect {
       x: g,
       y: existing_rect.y,
       w: w / 2 - ghg,
-      h: existing_rect.h
+      h: existing_rect.h,
     },
     Direction::Right => Rect {
       x: w / 2 + hg,
       y: existing_rect.y,
       w: w / 2 - ghg,
-      h: existing_rect.h
+      h: existing_rect.h,
     },
-    Direction::Down =>  Rect {
+    Direction::Down => Rect {
       x: existing_rect.x,
       y: h / 2 + hg,
       w: existing_rect.w,
-      h: h / 2 - ghg
+      h: h / 2 - ghg,
     },
-    Direction::Up =>    Rect {
+    Direction::Up => Rect {
       x: existing_rect.x,
       y: g,
       w: existing_rect.w,
-      h: h / 2 - ghg
+      h: h / 2 - ghg,
     },
   };
   a.set_rect(rect)?;
