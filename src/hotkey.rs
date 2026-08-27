@@ -4,7 +4,6 @@ use std::thread::{JoinHandle, spawn};
 use std::sync::{Mutex, OnceLock};
 use std::sync::mpsc::{Sender, channel};
 use anyhow::Result;
-use windows_sys::Win32::UI::WindowsAndMessaging::*;
 use windows_sys::Win32::UI::HiDpi::*;
 use crate::*;
 use crate::keys::{Key, KeyState};

@@ -3,7 +3,6 @@ use std::ptr;
 use std::fmt::Write;
 use std::os::raw::c_void;
 use anyhow::{anyhow, Result};
-use windows_sys::Win32::UI::WindowsAndMessaging::*;
 use windows_sys::Win32::Graphics::Dwm::*;
 use windows_sys::Win32::Graphics::Gdi::*;
 use windows_sys::Win32::System::Threading::*;
