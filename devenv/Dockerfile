@@ -10,5 +10,9 @@ RUN sudo apk add  \
 RUN /usr/bin/rustup-init -y
 RUN echo '. "$HOME/.cargo/env"' >> $HOME/.profile
 
+# set up rust language server
+RUN $HOME/.cargo/bin/rustup component add rust-analyzer
+RUN $HOME/.cargo/bin/rustup component add rust-src
+
 # set up windows target
 RUN $HOME/.cargo/bin/rustup target add x86_64-pc-windows-gnu
