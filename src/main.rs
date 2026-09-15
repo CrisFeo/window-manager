@@ -124,11 +124,11 @@ fn print_windows() -> Result<()> {
 }
 
 fn terminal(command: &str) -> Result<()> {
-  let wt = "%LocalAppData%\\Microsoft\\WindowsApps\\wt.exe";
-  let wt_args = "--focus --profile Alpine";
+  let te = "C:\\tools\\alacritty\\alacritty.exe";
+  let te_args = "--command";
   let wsl = "C:\\Windows\\system32\\wsl.exe";
-  let wsl_args = "-d Alpine";
-  let script = format!("start {wt} {wt_args} {wsl} {wsl_args} -- {command}");
+  let wsl_args = "-d Alpine --cd ~";
+  let script = format!("start {te} {te_args} {wsl} {wsl_args} -- {command}");
   Command::new("C:\\windows\\system32\\cmd.exe")
     .args(["/c", &script])
     .spawn()?;
